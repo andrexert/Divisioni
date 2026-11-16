@@ -1,6 +1,14 @@
 # Impariamo insieme
 
-Un piccolo programma didattico per ragazzi nello spettro autistico. Per ora contiene due attività, le **divisioni con gli oggetti** e le **divisioni in colonna**, ma è pensato per aggiungerne altre nel tempo.
+Un piccolo programma didattico per ragazzi nello spettro autistico. È un **percorso verso la divisione** in cinque tappe, ciascuna con la sua mascotte:
+
+1. **Addizioni** (orsetto): mettere insieme.
+2. **Sottrazioni** (ranocchia): togliere.
+3. **Moltiplicazioni** (riccio): gruppi uguali e tabelline.
+4. **Divisioni** (volpe): dividere in parti uguali.
+5. **Divisioni in colonna** (gufo): il procedimento scritto, un passo alla volta.
+
+Ogni tappa usa gli strumenti della precedente: le tabelline servono per la divisione in colonna, la sottrazione per i suoi resti. Le attività con gli oggetti usano gli stessi animali e lo stesso cibo, così il ragazzo ritrova sempre un mondo che conosce.
 
 È una **web app installabile** (PWA): si apre da un indirizzo web, si può installare con la sua icona e, dopo la prima apertura, funziona anche senza connessione. Non raccoglie dati: le uniche informazioni salvate sono le impostazioni scelte dal docente, che restano nel browser del dispositivo che si sta usando (`localStorage`), insieme a un piccolo resoconto dell'ultima sessione per il docente (attività e numero di esercizi risolti al primo tentativo, senza nomi).
 
@@ -44,8 +52,22 @@ Le impostazioni si aprono dall'ingranaggio in alto a destra: si apre l'**Area do
 Sono disponibili:
 
 - **Generali:** lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, colori vivaci o tenui (per i ragazzi con ipersensibilità visiva), sfondi illustrati sì o no, caratteri più grandi, alto contrasto.
+- **Addizioni** e **Sottrazioni:** tipo di esercizio (con gli oggetti, calcola, alterna), animali e cibo, numero massimo (5, 10 o 20), numero di esercizi, disegno di aiuto.
+- **Moltiplicazioni:** tipo di esercizio (gruppi uguali, tabelline, alterna), animali e cibo, quali tabelline (dal 2 al 5, dal 2 al 10 o una sola), numero di esercizi, aiuto con i salti.
 - **Divisioni:** tipo di esercizio, divisore massimo, risultato massimo, divisioni con il resto, numero di esercizi per sessione e disegno di aiuto.
 - **Divisioni in colonna:** cifre del dividendo (2, 3 o 4), cifre del divisore (1 o 2), divisioni con il resto, sottrazioni scritte o metodo breve, tabellina di aiuto, numero di esercizi.
+
+## Le attività "Addizioni", "Sottrazioni" e "Moltiplicazioni"
+
+Hanno la stessa struttura delle divisioni: prima **con gli oggetti**, poi **calcola** con l'operazione scritta, oppure le due modalità **alternate**. Nelle ciotole il cibo è sempre in righe da 5. Per i risultati fino a 10 si risponde con una fila di tasti; oltre, con un tastierino (cifre, cancella, OK), perché una fila di 21 tasti sarebbe troppo da guardare.
+
+**Addizioni.** "Il gattino ha 7 pesci. Dagli altri 2 pesci: toccali uno alla volta." Il ragazzo tocca i pesci in arrivo, che vanno nella ciotola, poi dice quanti sono in tutto. In "Calcola" il disegno di aiuto mostra i due gruppi separati da "+".
+
+**Sottrazioni.** "Il coniglietto ha 5 carote. Ne mangia 4: tocca 4 carote." Le carote toccate diventano trasparenti ma restano al loro posto, come quando si cancella sul quaderno: si vede quanto c'era e quanto resta. Il risultato non è mai 0, un caso che conviene introdurre più avanti.
+
+**Moltiplicazioni.** In "Gruppi uguali": "Ci sono 4 scoiattoli. Dai 3 ghiande a ogni scoiattolo." Una ciotola piena non accetta altro. Se il ragazzo sbaglia il totale, il suggerimento propone di contare a salti ("3, 6, 9..."), e nel riquadro finale compare l'addizione ripetuta sopra la moltiplicazione: `3 + 3 + 3 + 3 = 12`, poi `3 × 4 = 12`. In "Tabelline" l'aiuto non è la tabellina già risolta, che si copierebbe e basta, ma la fila dei salti da contare: "Conta 4 salti di 3: 3 · 6 · 9 · 12 · ...".
+
+Convenzione di scrittura: `3 × 4` è "3 preso 4 volte" (`3 + 3 + 3 + 3`), cioè 4 gruppi da 3. Conviene verificare che sia la stessa usata dalle insegnanti.
 
 ## L'attività "Divisioni"
 
@@ -90,15 +112,15 @@ Il programma segue alcuni principi pensati per i ragazzi nello spettro autistico
 
 ## Immagini
 
-Gli animali e le mascotte (la volpe per le divisioni, il gufo per le divisioni in colonna) sono in pixel art, generati con [PixelLab](https://www.pixellab.ai/) e salvati come PNG nella cartella `img/`. Il programma non contatta PixelLab né altri servizi: le immagini sono file normali, quindi tutto continua a funzionare offline e non serve alcuna chiave API. Le immagini del cibo sono state ritagliate a 25×25 pixel e vengono mostrate al doppio della dimensione (a grandezza naturale sui telefoni, dove gli schermi sono più densi). Gli animali (64×64) sono mostrati a 128 o 64 pixel, e anche gli sfondi (320×192) vengono ingranditi di un numero intero di volte. Si usano sempre multipli esatti con `image-rendering: pixelated`, così i pixel restano nitidi.
+Gli animali e le mascotte (orsetto, ranocchia, riccio, volpe e gufo) sono in pixel art, generati con [PixelLab](https://www.pixellab.ai/) e salvati come PNG nella cartella `img/`. Il programma non contatta PixelLab né altri servizi: le immagini sono file normali, quindi tutto continua a funzionare offline e non serve alcuna chiave API. Le immagini del cibo sono state ritagliate a 25×25 pixel e vengono mostrate al doppio della dimensione (a grandezza naturale sui telefoni, dove gli schermi sono più densi). Gli animali (64×64) sono mostrati a 128 o 64 pixel, e anche gli sfondi (320×192) vengono ingranditi di un numero intero di volte. Si usano sempre multipli esatti con `image-rendering: pixelated`, così i pixel restano nitidi.
 
-Ogni schermata ha uno sfondo in pixel art: colline per il menu, un prato per le divisioni con gli animali, un bosco al tramonto per il gufo delle divisioni in colonna. Il lavoro sta sempre su un pannello chiaro al centro, così lo sfondo resta ai margini e non disturba. Gli sfondi si possono spegnere dalle impostazioni e si spengono da soli con i colori tenui o con l'alto contrasto, perché in quei casi l'obiettivo è ridurre gli stimoli visivi.
+Ogni schermata ha uno sfondo in pixel art: colline per il menu, una spiaggia per le addizioni, uno stagno per le sottrazioni, un orto per le moltiplicazioni, un prato per le divisioni, un bosco al tramonto per le divisioni in colonna. Il lavoro sta sempre su un pannello chiaro al centro, così lo sfondo resta ai margini e non disturba. Gli sfondi si possono spegnere dalle impostazioni e si spengono da soli con i colori tenui o con l'alto contrasto, perché in quei casi l'obiettivo è ridurre gli stimoli visivi.
 
-Per aggiungere nuovi temi basta mettere in `img/` un animale e un cibo con lo stesso nome usato in `TEMI` dentro `js/attivita/divisioni.js`.
+Per aggiungere nuovi temi basta mettere in `img/` un animale e un cibo con lo stesso nome usato in `TEMI` dentro `js/comune.js`: compaiono in tutte le attività.
 
 ## Test automatici
 
-`tests/esegui.js` è un "alunno automatico" che usa l'app su cinque dispositivi simulati: computer con Chrome, computer con Safari (WebKit, lo stesso motore), iPhone, iPad e telefono Android. Gioca tutti i temi delle divisioni con gli oggetti e le divisioni in colonna con impostazioni diverse, sbaglia apposta per provare i suggerimenti, usa anche solo la tastiera e controlla che la pagina non esca mai dai bordi dello schermo. `tests/pwa.js` controlla che la web app sia installabile e funzioni senza rete.
+`tests/esegui.js` è un "alunno automatico" che usa l'app su cinque dispositivi simulati: computer con Chrome, computer con Safari (WebKit, lo stesso motore), iPhone, iPad e telefono Android. Fa addizioni, sottrazioni e moltiplicazioni (con entrambi i tipi di risposta), tutti i temi delle divisioni con gli oggetti e le divisioni in colonna con impostazioni diverse, sbaglia apposta per provare i suggerimenti, usa anche solo la tastiera e controlla che la pagina non esca mai dai bordi dello schermo. `tests/pwa.js` controlla che la web app sia installabile e funzioni senza rete.
 
 I test girano da soli su GitHub a ogni pull request (`.github/workflows/verifica.yml`): se qualcosa non va, si vede prima che la modifica vada online. Per lanciarli sul proprio computer servono Node.js e Python 3:
 
@@ -130,23 +152,28 @@ tests/                      test automatici (alunno automatico, web app offline)
 img/                        immagini in pixel art (animali, cibo, mascotte)
 css/stile.css               aspetto grafico (colori, dimensioni, alto contrasto)
 js/app.js                   nucleo: menu, impostazioni, voce, suoni, tastiera, sfondi
-js/attivita/divisioni.js    attività "Divisioni" (con gli oggetti)
-js/attivita/colonna.js      attività "Divisioni in colonna"
+js/comune.js                parti comuni: temi, ciotole, risposte, svolgimento della sessione
+js/attivita/addizioni.js        1. Addizioni
+js/attivita/sottrazioni.js      2. Sottrazioni
+js/attivita/moltiplicazioni.js  3. Moltiplicazioni
+js/attivita/divisioni.js        4. Divisioni (con gli oggetti)
+js/attivita/colonna.js          5. Divisioni in colonna
 ```
 
 ## Aggiungere una nuova attività
 
-1. Creare un file in `js/attivita/`, per esempio `moltiplicazioni.js`.
+1. Creare un file in `js/attivita/`, per esempio `frazioni.js`. Il modello più semplice da copiare è `addizioni.js`, che usa le parti comuni di `js/comune.js` (temi, ciotole, risposte, sessione).
 2. Registrare l'attività:
 
 ```js
 Impariamo.registra({
-  id: 'moltiplicazioni',          // identificativo unico (usato anche per salvare le impostazioni)
-  titolo: 'Moltiplicazioni',
-  icona: '×',                     // oppure immagine: 'img/...png' (diventa anche la mascotte)
+  id: 'frazioni',                 // identificativo unico (usato anche per salvare le impostazioni)
+  passo: 6,                       // numero della tappa mostrato nel menu (facoltativo)
+  titolo: 'Frazioni',
+  icona: '½',                     // oppure immagine: 'img/...png' (diventa anche la mascotte)
   colore: '#13814a',              // colore della scheda nel menu e del fumetto
   sfondo: 'img/sfondo-....png',   // sfondo illustrato durante l'attività (facoltativo)
-  descrizione: 'Gruppi uguali',
+  descrizione: 'Parti di un intero',
   impostazioni: [                 // compaiono da sole nella schermata Impostazioni
     { chiave: 'max', etichetta: 'Numero massimo', predefinito: 5,
       opzioni: [{ valore: 5, testo: '5' }, { valore: 10, testo: '10' }] }
@@ -165,7 +192,7 @@ Impariamo.registra({
 3. Aggiungere in `index.html`, prima di `Impariamo.avvia()`:
 
 ```html
-<script src="js/attivita/moltiplicazioni.js"></script>
+<script src="js/attivita/frazioni.js"></script>
 ```
 
 L'attività comparirà automaticamente nel menu.
