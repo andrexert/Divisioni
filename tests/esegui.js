@@ -97,7 +97,11 @@ async function sbaglia(p, giusto, profilo) {
   const h = await p.locator('.risposta:not(.conclusa)').last().elementHandle();
   const disponibili = await h.evaluate(n => n.classList.contains('risposta-tastierino') ? null :
     Array.prototype.filter.call(n.querySelectorAll('.tasto'), b => !b.disabled).map(b => Number(b.textContent)));
-  const sbagliato = [giusto + 1, giusto - 1, giusto + 2].find(v => v >= 0 && v !== giusto && (!disponibili || disponibili.includes(v)));
+  // Il numero sbagliato più vicino a quello giusto tra i tasti ancora disponibili
+  // (con il tastierino qualsiasi numero va bene)
+  const sbagliato = disponibili
+    ? disponibili.filter(v => v !== giusto).sort((x, y) => Math.abs(x - giusto) - Math.abs(y - giusto))[0]
+    : giusto + 1;
   verifica(!(await scrivi(p, sbagliato, profilo)), 'la risposta sbagliata ' + sbagliato + ' è stata accettata');
 }
 
