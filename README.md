@@ -2,13 +2,32 @@
 
 Un piccolo programma didattico per ragazzi nello spettro autistico. Per ora contiene due attività, le **divisioni con gli oggetti** e le **divisioni in colonna**, ma è pensato per aggiungerne altre nel tempo.
 
-Funziona interamente nel browser, senza installazione e senza connessione a Internet. Non raccoglie dati: le uniche informazioni salvate sono le impostazioni scelte dal docente, e restano nel browser del computer che si sta usando (`localStorage`).
+È una **web app installabile** (PWA): si apre da un indirizzo web, si può installare con la sua icona e, dopo la prima apertura, funziona anche senza connessione. Non raccoglie dati: le uniche informazioni salvate sono le impostazioni scelte dal docente, che restano nel browser del computer che si sta usando (`localStorage`).
 
 ## Come si usa
 
-Basta aprire `index.html` con un doppio clic: si apre in Safari (o in un altro browser) e funziona subito. Per metterlo su più computer del laboratorio si copia l'intera cartella.
+### Online (consigliato)
 
-In alternativa si può pubblicare con **GitHub Pages** (Settings → Pages del repository) e aprire l'indirizzo che GitHub assegna da qualsiasi computer. Attenzione: con GitHub Pages il sito è pubblico. Non è un problema, perché non contiene dati, ma è bene saperlo.
+L'app si pubblica con **GitHub Pages**. Ogni modifica al branch `main` viene pubblicata automaticamente dal workflow `.github/workflows/pubblica.yml`, e i computer ricevono la versione nuova alla riapertura successiva dell'app, mai a metà di un esercizio.
+
+Configurazione, da fare una volta sola:
+
+1. Il repository deve essere **pubblico**, oppure l'account deve avere GitHub Pro: GitHub Pages sui repository privati è a pagamento. Il codice non contiene dati personali.
+2. In *Settings → Pages → Build and deployment → Source* scegliere **GitHub Actions**.
+3. Unire il lavoro nel branch `main`: il workflow pubblica e mostra l'indirizzo, del tipo `https://<utente>.github.io/<repository>/`.
+
+Sugli iMac:
+
+- **Safari** (anche sugli iMac Late 2013 con macOS Big Sur): basta aprire l'indirizzo. Dopo la prima apertura funziona anche senza rete. Per avere un'icona, si trascina il link dalla barra degli indirizzi nella parte destra del Dock. "Aggiungi al Dock" come vera app esiste solo da macOS Sonoma (Safari 17).
+- **Chrome / Edge**: dal menu, *Installa Impariamo insieme*. L'app si apre in una finestra sua, con l'icona della volpe nel Dock e nel Launchpad.
+
+### Senza Internet e senza pubblicare
+
+Si può ancora aprire `index.html` con un doppio clic, copiando l'intera cartella su ogni computer. In questo modo l'app funziona ma non si aggiorna da sola.
+
+### Come funziona il "senza rete"
+
+`sw.js` è un *service worker*: uno script che il browser installa alla prima visita e che conserva una copia di tutti i file. Al momento della pubblicazione, `tools/prepara_sito.py` scrive nel service worker l'elenco completo dei file e una versione (l'hash del commit). Quando la versione cambia, il browser scarica i file nuovi e cancella la copia vecchia. Lo script controlla anche che ogni immagine citata nel codice esista davvero, così un file dimenticato blocca la pubblicazione invece di rompere l'app offline.
 
 Il programma è scritto in JavaScript "classico" (ES5), senza librerie né compilazione, così funziona anche con le versioni di Safari degli iMac Late 2013 (macOS Big Sur al massimo).
 
@@ -75,6 +94,10 @@ Per aggiungere nuovi temi basta mettere in `img/` un animale e un cibo con lo st
 
 ```
 index.html                  pagina principale
+manifest.webmanifest        nome, icona e colori della web app installabile
+sw.js                       service worker: funzionamento senza rete
+tools/prepara_sito.py       prepara la cartella da pubblicare (_site)
+.github/workflows/          pubblicazione automatica su GitHub Pages
 img/                        immagini in pixel art (animali, cibo, mascotte)
 css/stile.css               aspetto grafico (colori, dimensioni, alto contrasto)
 js/app.js                   nucleo: menu, impostazioni, voce, suoni

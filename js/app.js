@@ -402,6 +402,15 @@
     bottoneMenu.addEventListener('click', mostraMenu);
     collegaPressioneLunga(document.getElementById('btn-impostazioni'), mostraImpostazioni);
     mostraMenu();
+    registraServiceWorker();
+  }
+
+  // Funzionamento senza rete: solo quando l'app è pubblicata su un sito (https).
+  // Aprendo index.html con un doppio clic (file://) i service worker non esistono
+  // e il programma funziona comunque, leggendo i file dal disco.
+  function registraServiceWorker() {
+    if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
+    navigator.serviceWorker.register('sw.js').catch(function () { /* senza copia offline */ });
   }
 
   window.Impariamo = {
