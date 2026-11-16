@@ -1,0 +1,11 @@
+{
+  "name": "impariamo-insieme",
+  "private": true,
+  "description": "Web app didattica per le divisioni, pensata per ragazzi nello spettro autistico.",
+  "scripts": {
+    "test": "node tests/esegui.js && node tests/pwa.js"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
