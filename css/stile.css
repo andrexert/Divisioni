@@ -361,3 +361,101 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
 @media (prefers-reduced-motion: reduce) {
   #btn-impostazioni.in-pressione::after { transition: none; }
 }
+
+/* ---------- Divisioni in colonna ---------- */
+
+.colonna-area {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1.5rem 2.5rem;
+  margin: 1rem 0;
+}
+
+.colonna-lavagna {
+  --cella: 2.3rem;
+  --altezza: 2.9rem;
+  display: flex;
+  align-items: flex-start;
+  padding: 1rem 1.4rem;
+  background: var(--superficie);
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+  font-size: 1.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.colonna-griglia { display: grid; grid-auto-rows: var(--altezza); }
+.cella {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+/* Il numero su cui si sta lavorando */
+.cella.attiva, .colonna-divisore.attiva { background: var(--accento-tenue); }
+/* La casella dove scrivere la risposta */
+.cella.da-scrivere {
+  border: 3px dashed var(--accento);
+  border-radius: 8px;
+  color: var(--accento);
+}
+.cella.linea { border-bottom: 3px solid var(--testo); }
+.cella.segno { color: var(--testo-tenue); font-weight: 400; }
+.cella.scesa { color: var(--accento); }
+/* Freccina sotto le cifre del dividendo già abbassate */
+.cella.abbassata::after {
+  content: "\2193";
+  position: absolute;
+  right: 0;
+  bottom: -0.1em;
+  font-size: 0.45em;
+  color: var(--accento);
+}
+
+.colonna-destra {
+  display: grid;
+  grid-auto-rows: var(--altezza);
+  align-self: stretch;
+  min-width: 4.5rem;
+  margin-left: 0.5rem;
+  border-left: 3px solid var(--testo);
+}
+.colonna-divisore {
+  display: flex;
+  align-items: center;
+  padding: 0 0.7rem;
+  border-bottom: 3px solid var(--testo);
+}
+.colonna-quoziente { display: flex; align-items: center; padding: 0 0.5rem; }
+.colonna-quoziente .cella { width: var(--cella); height: calc(var(--altezza) - 0.3rem); }
+
+.colonna-comandi { display: flex; align-items: center; min-height: 6rem; }
+.bottone.grande { min-width: 6rem; min-height: 4rem; font-size: 1.4rem; }
+
+.tastiera-numerica {
+  display: grid;
+  grid-template-columns: repeat(3, 3.6rem);
+  gap: 0.6rem;
+}
+.tasto-canc { border-color: var(--bordo); color: var(--testo-tenue); }
+.tasto-ok { background: var(--accento); color: #ffffff; font-size: 1.2rem; }
+
+.tabellina {
+  max-width: 640px;
+  margin: 0.5rem auto;
+  padding: 0.6rem 1rem;
+  border: 2px dashed var(--bordo);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+  text-align: center;
+}
+.tabellina-titolo { margin: 0 0 0.4rem; font-weight: 600; }
+.tabellina-elenco {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 1.2rem;
+  font-variant-numeric: tabular-nums;
+}

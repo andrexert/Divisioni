@@ -1,6 +1,6 @@
 # Impariamo insieme
 
-Un piccolo programma didattico per ragazzi nello spettro autistico. Per ora c'è una sola attività, le **divisioni**, ma è pensato per aggiungerne altre nel tempo.
+Un piccolo programma didattico per ragazzi nello spettro autistico. Per ora contiene due attività, le **divisioni con gli oggetti** e le **divisioni in colonna**, ma è pensato per aggiungerne altre nel tempo.
 
 Funziona interamente nel browser, senza installazione e senza connessione a Internet. Non raccoglie dati: le uniche informazioni salvate sono le impostazioni scelte dal docente, e restano nel browser del computer che si sta usando (`localStorage`).
 
@@ -20,6 +20,7 @@ Sono disponibili:
 
 - **Generali:** lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, caratteri più grandi, alto contrasto.
 - **Divisioni:** tipo di esercizio, divisore massimo, risultato massimo, divisioni con il resto, numero di esercizi per sessione e disegno di aiuto.
+- **Divisioni in colonna:** cifre del dividendo (2, 3 o 4), cifre del divisore (1 o 2), divisioni con il resto, sottrazioni scritte o metodo breve, tabellina di aiuto, numero di esercizi.
 
 ## L'attività "Divisioni"
 
@@ -28,6 +29,24 @@ Sono disponibili:
 **Calcola.** Compare l'operazione scritta, per esempio `12 : 3 = ?`, e si risponde con i bottoni numerici. Il disegno di aiuto (scatole già riempite) si può mostrare sempre, su richiesta o mai. Se è attivo "su richiesta", compare comunque dopo due tentativi sbagliati.
 
 **Alterna.** Un esercizio "Distribuisci" e uno "Calcola", in alternanza.
+
+## L'attività "Divisioni in colonna"
+
+La divisione è disposta come sul quaderno: il dividendo a sinistra, il divisore a destra oltre la linea verticale, il risultato sotto il divisore. Il programma guida il procedimento un passo alla volta, con una sola domanda per volta:
+
+1. "Il 4 sta nell'1?" Si risponde Sì o No. Se la risposta è No, si prende anche la cifra successiva.
+2. "Quante volte il 4 sta nel 15?" La cifra va nel risultato.
+3. "Quanto fa 3 × 4?" Il prodotto si scrive sotto, con il segno meno e la riga.
+4. "Quanto fa 15 − 12?" Si scrive quanto avanza.
+5. "Abbassa il 6." Si preme il bottone, la cifra scende accanto al resto e si ricomincia dal punto 2.
+
+Se dopo aver abbassato una cifra il divisore non ci sta, si scrive 0 nel risultato e si abbassa la cifra successiva, come si fa a scuola.
+
+Il numero su cui si sta lavorando è sempre evidenziato. Le cifre abbassate sono colorate e, nel dividendo, una freccina segna quelle già usate. Le risposte si scrivono con una tastiera numerica sullo schermo (cifre, cancella, OK).
+
+Gli errori ricevono un suggerimento mirato. Se la risposta a "quante volte" è troppo grande compare "Troppo: 9 × 3 = 27, che è più di 26"; se è troppo piccola, compare quanto avanza e che basta per un altro divisore. La tabellina del divisore può essere sempre visibile, comparire dopo il primo errore oppure mai.
+
+Con il **metodo breve** il prodotto non viene scritto: si chiede direttamente quanto avanza, come si fa negli anni successivi.
 
 ## Scelte di progettazione
 
@@ -48,7 +67,8 @@ Alla fine della sessione compare una piccola nota per il docente con il numero d
 index.html                  pagina principale
 css/stile.css               aspetto grafico (colori, dimensioni, alto contrasto)
 js/app.js                   nucleo: menu, impostazioni, voce, suoni
-js/attivita/divisioni.js    attività "Divisioni"
+js/attivita/divisioni.js    attività "Divisioni" (con gli oggetti)
+js/attivita/colonna.js      attività "Divisioni in colonna"
 ```
 
 ## Aggiungere una nuova attività
@@ -69,7 +89,9 @@ Impariamo.registra({
   avvia: function (area, opz, api) {
     // area: elemento in cui disegnare l'attività
     // opz:  impostazioni correnti, per esempio opz.max
-    // api:  el(), consegna(), parla(), suono('giusto'|'riprova'), fine({ totale, alPrimoTentativo })
+    // api:  el(), consegna(testo), messaggio(), avanzamento(totale),
+    //       esito(contenitore, scritta, ultimo, alAvanti), parla(testo),
+    //       suono('giusto'|'riprova'), fine({ totale, alPrimoTentativo })
   }
 });
 ```

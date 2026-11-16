@@ -57,25 +57,15 @@
     var alPrimoTentativo = 0;
     var ultimaOperazione = '';
 
-    var avanzamento = el('div', { classe: 'avanzamento' });
+    var barra = api.avanzamento(opz.numeroEsercizi);
     var scena = el('div', { classe: 'scena' });
-    area.appendChild(avanzamento);
+    area.appendChild(barra.nodo);
     area.appendChild(scena);
 
     /* ---------- Elementi comuni ---------- */
 
     function pallino() {
       return el('span', { classe: 'pallino', 'aria-hidden': 'true' });
-    }
-
-    function aggiornaAvanzamento() {
-      avanzamento.innerHTML = '';
-      avanzamento.appendChild(el('span', { testo: 'Esercizio ' + (indice + 1) + ' di ' + opz.numeroEsercizi }));
-      var puntini = el('span', { classe: 'puntini', 'aria-hidden': 'true' });
-      for (var i = 0; i < opz.numeroEsercizi; i++) {
-        puntini.appendChild(el('span', { classe: 'puntino' + (i < indice ? ' fatto' : i === indice ? ' attuale' : '') }));
-      }
-      avanzamento.appendChild(puntini);
     }
 
     // Bottoni con i numeri: un errore spegne solo quel numero, senza segni rossi
@@ -107,12 +97,6 @@
 
     function domanda(testo, tastiera) {
       return el('div', { classe: 'domanda' }, [el('p', { classe: 'domanda-testo', testo: testo }), tastiera]);
-    }
-
-    function messaggio() {
-      var p = el('p', { classe: 'messaggio', 'aria-live': 'polite' });
-      p.dici = function (testo) { p.textContent = testo; if (testo) api.parla(testo); };
-      return p;
     }
 
     // Disegno statico: le scatole già riempite e gli eventuali pallini avanzati
@@ -161,7 +145,7 @@
       }
       var modo = opz.modalita === 'alterna' ? (indice % 2 === 0 ? 'distribuisci' : 'calcola') : opz.modalita;
       var es = genera(modo);
-      aggiornaAvanzamento();
+      barra.aggiorna(indice);
       scena.innerHTML = '';
       var concludi = function (errori) { conclusione(es, errori); };
       if (modo === 'calcola') calcola(es, concludi);
@@ -172,21 +156,7 @@
       if (errori === 0) alPrimoTentativo++;
       indice++;
       var scritta = es.dividendo + ' : ' + es.divisore + ' = ' + es.quoziente + (es.resto ? ' resto ' + es.resto : '');
-      var parlata = es.dividendo + ' diviso ' + es.divisore + ' fa ' + es.quoziente + (es.resto ? ', resto ' + es.resto : '');
-      var avanti = el('button', {
-        type: 'button', classe: 'bottone',
-        testo: indice >= opz.numeroEsercizi ? 'Fine' : 'Avanti →',
-        onclick: prossimo
-      });
-      var riquadro = el('div', { classe: 'esito' }, [
-        el('p', { classe: 'esito-lode', testo: 'Esatto!' }),
-        el('p', { classe: 'operazione', testo: scritta }),
-        avanti
-      ]);
-      scena.appendChild(riquadro);
-      if (riquadro.scrollIntoView) riquadro.scrollIntoView({ block: 'nearest' });
-      avanti.focus();
-      api.parla('Esatto! ' + parlata);
+      api.esito(scena, scritta, indice >= opz.numeroEsercizi, prossimo);
     }
 
     /* ---------- Modalità "Distribuisci" ---------- */
@@ -205,7 +175,7 @@
 
       var mucchio = el('div', { classe: 'mucchio' });
       var zonaScatole = el('div', { classe: 'scatole' });
-      var avviso = messaggio();
+      var avviso = api.messaggio();
       var ricomincia = el('button', { type: 'button', classe: 'bottone secondario piccolo', testo: 'Ricomincia', onclick: prepara });
       var zonaDomande = el('div');
 
@@ -317,7 +287,7 @@
       var casellaQuoziente = el('span', { classe: 'casella', testo: '?' });
       var operazione = el('p', { classe: 'operazione' }, [es.dividendo + ' : ' + es.divisore + ' = ', casellaQuoziente]);
       var disegno = el('div');
-      var avviso = messaggio();
+      var avviso = api.messaggio();
       var bottoneAiuto = opz.aiuto === 'richiesta'
         ? el('button', { type: 'button', classe: 'bottone secondario piccolo', testo: 'Mostrami il disegno', onclick: mostraDisegno })
         : null;

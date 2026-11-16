@@ -92,11 +92,20 @@
 
   /* ---------- Voce e suoni ---------- */
 
+  // I simboli matematici si leggono a parole: "12 : 3 = 4" diventa "12 diviso 3 fa 4"
+  function aVoce(testo) {
+    return testo
+      .replace(/\s\u00D7\s/g, ' per ')
+      .replace(/\s\u2212\s/g, ' meno ')
+      .replace(/\s:\s/g, ' diviso ')
+      .replace(/\s=\s/g, ' fa ');
+  }
+
   function parla(testo) {
     if (!impostazioni.generale.voce || !('speechSynthesis' in window)) return;
     try {
       window.speechSynthesis.cancel();
-      var frase = new window.SpeechSynthesisUtterance(testo);
+      var frase = new window.SpeechSynthesisUtterance(aVoce(testo));
       frase.lang = 'it-IT';
       frase.rate = 0.9;
       var voci = window.speechSynthesis.getVoices().filter(function (v) { return /^it/i.test(v.lang); });
@@ -148,6 +157,51 @@
     return riga;
   }
 
+  // Riga per i suggerimenti e gli avvisi; p.dici(testo) la aggiorna e la legge
+  function messaggio() {
+    var p = el('p', { classe: 'messaggio', 'aria-live': 'polite' });
+    p.dici = function (testo) {
+      p.textContent = testo;
+      if (testo) parla(testo);
+    };
+    return p;
+  }
+
+  // "Esercizio 2 di 5" con i puntini
+  function avanzamento(totale) {
+    var nodo = el('div', { classe: 'avanzamento' });
+    return {
+      nodo: nodo,
+      aggiorna: function (indice) {
+        nodo.innerHTML = '';
+        nodo.appendChild(el('span', { testo: 'Esercizio ' + (indice + 1) + ' di ' + totale }));
+        var puntini = el('span', { classe: 'puntini', 'aria-hidden': 'true' });
+        for (var i = 0; i < totale; i++) {
+          puntini.appendChild(el('span', { classe: 'puntino' + (i < indice ? ' fatto' : i === indice ? ' attuale' : '') }));
+        }
+        nodo.appendChild(puntini);
+      }
+    };
+  }
+
+  // Riquadro verde di fine esercizio, sempre uguale: "Esatto!", l'operazione, "Avanti"
+  function esito(contenitore, scritta, ultimo, alAvanti) {
+    var avanti = el('button', {
+      type: 'button', classe: 'bottone',
+      testo: ultimo ? 'Fine' : 'Avanti →',
+      onclick: alAvanti
+    });
+    var riquadro = el('div', { classe: 'esito' }, [
+      el('p', { classe: 'esito-lode', testo: 'Esatto!' }),
+      el('p', { classe: 'operazione', testo: scritta }),
+      avanti
+    ]);
+    contenitore.appendChild(riquadro);
+    if (riquadro.scrollIntoView) riquadro.scrollIntoView({ block: 'nearest' });
+    avanti.focus();
+    parla('Esatto! ' + scritta);
+  }
+
   /* ---------- Schermate ---------- */
 
   function pulisci(nuovoTitolo, mostraBottoneMenu) {
@@ -184,6 +238,9 @@
       parla: parla,
       suono: suono,
       consegna: consegna,
+      messaggio: messaggio,
+      avanzamento: avanzamento,
+      esito: esito,
       fine: function (esito) { mostraFine(a, esito); }
     });
   }
