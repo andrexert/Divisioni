@@ -1,0 +1,363 @@
+/*
+ * Stile pensato per ragazzi nello spettro autistico:
+ * colori tenui e pochi, niente animazioni lampeggianti, elementi grandi,
+ * una sola cosa importante per volta, disposizione sempre uguale.
+ */
+
+:root {
+  --sfondo: #f5f2ea;
+  --superficie: #ffffff;
+  --testo: #1f2a33;
+  --testo-tenue: #5b6670;
+  --accento: #2f6690;
+  --accento-tenue: #dce9f3;
+  --bordo: #c9c3b6;
+  --pallino: #d9822b;
+  --giusto: #2e7d5b;
+  --giusto-tenue: #e1f1e8;
+  --avanzo: #fbeedd;
+  --raggio: 16px;
+}
+
+/* Alto contrasto: scelto dal docente nelle impostazioni */
+:root.alto-contrasto {
+  --sfondo: #ffffff;
+  --superficie: #ffffff;
+  --testo: #000000;
+  --testo-tenue: #000000;
+  --accento: #003a8c;
+  --accento-tenue: #fff3a3;
+  --bordo: #000000;
+  --pallino: #000000;
+  --giusto: #00552e;
+  --giusto-tenue: #d6f5e3;
+  --avanzo: #fff3a3;
+}
+
+html { font-size: 20px; }
+html.caratteri-grandi { font-size: 26px; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--sfondo);
+  color: var(--testo);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.4;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 4px solid var(--accento); outline-offset: 3px; }
+
+/* ---------- Barra in alto ---------- */
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--superficie);
+  border-bottom: 2px solid var(--bordo);
+}
+.barra h1 { margin: 0; font-size: 1.3rem; flex: 1; text-align: center; }
+.bottone-barra {
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0.3rem 0.9rem;
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+  font-size: 1rem;
+}
+.zona-impostazioni { display: flex; align-items: center; gap: 0.5rem; }
+.suggerimento { font-size: 0.7rem; color: var(--testo-tenue); }
+#btn-impostazioni {
+  position: relative;
+  overflow: hidden;
+  color: var(--testo-tenue);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+/* Barra che si riempie mentre il docente tiene premuto */
+#btn-impostazioni::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 4px; width: 0;
+  background: var(--accento);
+}
+#btn-impostazioni.in-pressione::after { width: 100%; transition: width 1.5s linear; }
+
+main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none; }
+
+/* ---------- Elementi comuni ---------- */
+
+.consegna {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  text-align: center;
+  font-size: 1.2rem;
+}
+.consegna p { margin: 0.6rem 0; }
+.bottone-ascolta {
+  border: 2px solid var(--bordo);
+  border-radius: 50%;
+  width: 2.6rem; height: 2.6rem;
+  background: var(--superficie);
+  flex-shrink: 0;
+}
+
+.bottone {
+  min-height: 3.2rem;
+  padding: 0.5rem 1.6rem;
+  border: 0;
+  border-radius: var(--raggio);
+  background: var(--accento);
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.bottone.secondario {
+  background: var(--superficie);
+  color: var(--accento);
+  border: 2px solid var(--accento);
+}
+.bottone.piccolo { min-height: 2.6rem; font-size: 0.9rem; padding: 0.3rem 1rem; }
+
+.riga-bottoni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.nota-docente { color: var(--testo-tenue); font-size: 0.8rem; text-align: center; }
+
+/* ---------- Menu ---------- */
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.2rem;
+  margin-top: 1rem;
+}
+.scheda-attivita {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.4rem 1rem;
+  border: 3px solid var(--bordo);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+}
+.scheda-attivita:hover { border-color: var(--accento); }
+.scheda-icona {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem; height: 4rem;
+  border-radius: 50%;
+  background: var(--accento-tenue);
+  color: var(--accento);
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+.scheda-titolo { font-size: 1.3rem; font-weight: 700; }
+.scheda-descrizione { color: var(--testo-tenue); font-size: 0.9rem; }
+
+/* ---------- Avanzamento ---------- */
+
+.avanzamento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  color: var(--testo-tenue);
+  font-size: 0.9rem;
+}
+.puntini { display: flex; gap: 0.35rem; }
+.puntino {
+  width: 0.8rem; height: 0.8rem;
+  border-radius: 50%;
+  border: 2px solid var(--bordo);
+}
+.puntino.attuale { border-color: var(--accento); }
+.puntino.fatto { background: var(--accento); border-color: var(--accento); }
+
+/* ---------- Pallini, mucchio e scatole ---------- */
+
+.pallino {
+  display: inline-block;
+  width: 1.3rem; height: 1.3rem;
+  border-radius: 50%;
+  background: var(--pallino);
+}
+
+.mucchio {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.6rem;
+  max-width: 640px;
+  margin: 0.6rem auto;
+  padding: 0.7rem;
+  border-radius: var(--raggio);
+  background: var(--superficie);
+  border: 2px dashed var(--bordo);
+}
+.mucchio.avanzo { background: var(--avanzo); }
+
+.scatole {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1.2rem 0;
+}
+.scatola {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 7.5rem;
+  min-height: 7.5rem;
+  padding: 0.6rem;
+  border: 3px solid var(--bordo);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+}
+.scatola:disabled { cursor: default; opacity: 1; }
+.scatola.suggerita { border-color: var(--accento); border-style: dashed; background: var(--accento-tenue); }
+.scatola.statica { width: 6rem; min-height: 6rem; }
+.scatola-pallini {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+.scatola .pallino { width: 1.1rem; height: 1.1rem; }
+
+.figura { margin: 0.5rem 0 1rem; }
+.etichetta-avanzo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: var(--testo-tenue);
+}
+.etichetta-avanzo .mucchio { margin: 0; }
+
+/* ---------- Domande e tastierino ---------- */
+
+.messaggio { min-height: 1.5em; text-align: center; font-size: 1.05rem; color: var(--testo); }
+
+.domanda { margin: 1rem 0; text-align: center; }
+.domanda-testo { font-size: 1.2rem; font-weight: 600; margin: 0.4rem 0 0.8rem; }
+
+.tastierino {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+  max-width: 640px;
+  margin: 0.5rem auto;
+}
+.tasto {
+  width: 3.6rem; height: 3.6rem;
+  border: 3px solid var(--accento);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+  color: var(--accento);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.tasto:disabled { cursor: default; }
+.tasto.provato { opacity: 0.3; border-style: dashed; }
+.tasto.giusto { background: var(--giusto); border-color: var(--giusto); color: #ffffff; opacity: 1; }
+
+/* ---------- Operazione scritta ---------- */
+
+.operazione {
+  text-align: center;
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 0.8rem 0;
+  letter-spacing: 0.04em;
+}
+.casella {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 0.2em;
+  border: 3px dashed var(--accento);
+  border-radius: 10px;
+  color: var(--accento);
+}
+.casella.compilata { border-style: solid; border-color: var(--giusto); color: var(--giusto); }
+
+/* ---------- Esito e fine ---------- */
+
+.esito {
+  margin: 1.5rem auto 0;
+  padding: 1rem;
+  max-width: 640px;
+  text-align: center;
+  border-radius: var(--raggio);
+  background: var(--giusto-tenue);
+  border: 2px solid var(--giusto);
+}
+.esito-lode { font-size: 1.5rem; font-weight: 700; color: var(--giusto); margin: 0.3rem 0; }
+.esito .operazione { font-size: 2rem; }
+
+.fine { text-align: center; padding-top: 2rem; font-size: 1.2rem; }
+.fine-grande { font-size: 2.6rem; font-weight: 700; color: var(--giusto); margin: 0; }
+
+/* ---------- Impostazioni ---------- */
+
+.sezione-impostazioni {
+  margin: 1.2rem 0;
+  padding: 0.8rem 1.2rem;
+  background: var(--superficie);
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+}
+.sezione-impostazioni h2 { font-size: 1.15rem; margin: 0.3rem 0 0.6rem; }
+.impostazione {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--bordo);
+}
+.impostazione-etichetta { font-size: 0.95rem; }
+.scelte { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.scelta {
+  min-height: 2.4rem;
+  padding: 0.2rem 0.9rem;
+  border: 2px solid var(--bordo);
+  border-radius: 10px;
+  background: var(--superficie);
+  font-size: 0.9rem;
+}
+.scelta[aria-pressed="true"] { background: var(--accento); border-color: var(--accento); color: #ffffff; }
+
+@media (max-width: 600px) {
+  html { font-size: 17px; }
+  .scatola { width: 6rem; min-height: 6rem; }
+  .operazione { font-size: 2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #btn-impostazioni.in-pressione::after { transition: none; }
+}
