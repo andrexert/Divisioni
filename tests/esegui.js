@@ -204,7 +204,7 @@ async function sottrazioni(browser, profilo, tema, numeroMax) {
       await righeDa5(p, cosa);
       await controllaBordi(p, cosa);
       await sbaglia(p, a - b, profilo);
-      verifica((await p.textContent('.messaggio')).includes('Conta solo'), cosa + ': manca il suggerimento');
+      verifica(/conta/i.test(await p.textContent('.messaggio')), cosa + ': manca il suggerimento');
       await rispondi(p, a - b, profilo, cosa);
     } else {
       const [a, b] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);

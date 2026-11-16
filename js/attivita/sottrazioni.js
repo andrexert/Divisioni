@@ -126,7 +126,9 @@
           function () { avviso.dici(''); finito(errori); },
           function () {
             errori++;
-            avviso.dici('Non ancora. ' + (sacco ? 'Il sacchetto vale 10: parti da 10 e conta quelli rimasti fuori.' : contaRimasti));
+            avviso.dici('Non ancora. ' + (sacco
+              ? 'Il sacchetto vale 10: parti da 10 e conta ' + (t.femminile ? 'quelle' : 'quelli') + ' ' + g.p('rimast') + ' fuori.'
+              : contaRimasti));
           }
         )));
       }
