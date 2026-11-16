@@ -39,7 +39,13 @@ async function apri(browser, profilo, impostazioni) {
   const pagina = await contesto.newPage();
   pagina.erroriJs = [];
   pagina.on('pageerror', e => pagina.erroriJs.push(e.message));
-  pagina.on('requestfailed', r => pagina.erroriJs.push('file non caricato: ' + r.url()));
+  pagina.on('requestfailed', r => {
+    // Aperta da file (file://), Safari/WebKit non carica il manifest della web app:
+    // è previsto e innocuo, perché il manifest serve solo quando l'app è pubblicata
+    // su un sito, e lì lo controlla tests/pwa.js. Ogni altro file mancante è un errore.
+    if (r.url().startsWith('file:') && r.url().endsWith('/manifest.webmanifest')) return;
+    pagina.erroriJs.push('file non caricato: ' + r.url());
+  });
   await pagina.addInitScript(([k, v]) => { localStorage.setItem(k, v); }, [CHIAVE, JSON.stringify(impostazioni || {})]);
   await pagina.goto(PAGINA);
   // Sui dispositivi touch si tocca, sugli altri si clicca
