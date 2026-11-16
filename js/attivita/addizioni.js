@@ -37,6 +37,14 @@
       C.impostazioneEsercizi(),
       C.impostazioneAiuto('Disegno di aiuto in "Calcola"')
     ],
+    // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
+    livelli: [
+      { nome: 'Entro 5, con gli oggetti', imp: { modalita: 'oggetti', sommaMax: 5, oltreDieci: false } },
+      { nome: 'Entro 10, con gli oggetti', imp: { modalita: 'oggetti', sommaMax: 10, oltreDieci: false } },
+      { nome: 'Entro 10, anche scritte', imp: { modalita: 'alterna', sommaMax: 10, oltreDieci: false } },
+      { nome: 'Oltre il 10, con il sacchetto da 10', imp: { modalita: 'oggetti', sommaMax: 20, oltreDieci: true } },
+      { nome: 'Entro 20, anche scritte', imp: { modalita: 'alterna', sommaMax: 20, oltreDieci: false } }
+    ],
     avvia: avvia
   });
 
@@ -64,7 +72,11 @@
         : [g.Il + ' ha ' + g.quanti(es.a) + '.', 'Dagli ' + g.altri(es.b) + ': ' + g.toccali(es.b) + '.']));
 
       var c = k.ciotola({ quanti: 1 });
-      for (var i = 0; i < es.a; i++) c.dentro.appendChild(k.oggetto());
+      // 10 pezzi fanno un sacchetto (una decina): se si parte da 10 o più, c'è già
+      var sciolti = es.a % 10;
+      if (es.a >= 10) c.dentro.appendChild(k.sacchetto());
+      for (var i = 0; i < sciolti; i++) c.dentro.appendChild(k.oggetto());
+      var zonaSacchetto = el('div');
       // Il cibo che arriva: ogni pezzo è un bottone che, toccato, va nella ciotola
       var arrivo = el('div', { classe: 'mucchio mucchio-tocca', 'aria-label': 'Da mettere: ' + es.b });
       for (var j = 0; j < es.b; j++) {
@@ -75,19 +87,44 @@
       }
       var avviso = api.messaggio();
       var zonaDomande = el('div');
-      [arrivo, el('div', { classe: 'scatole' }, [c.nodo]), avviso, zonaDomande].forEach(function (n) { scena.appendChild(n); });
+      [arrivo, el('div', { classe: 'scatole' }, [c.nodo]), avviso, zonaSacchetto, zonaDomande].forEach(function (n) { scena.appendChild(n); });
 
       function metti(pezzo) {
         arrivo.removeChild(pezzo);
         c.dentro.appendChild(k.oggetto());
         daMettere--;
+        sciolti++;
         arrivo.setAttribute('aria-label', 'Da mettere: ' + daMettere);
-        if (daMettere > 0) return;
+        if (sciolti === 10) return proponiSacchetto();
+        if (daMettere === 0) chiedi();
+      }
+
+      // Arrivati a 10 si fa il sacchetto: è il riporto delle addizioni in colonna
+      function proponiSacchetto() {
+        Array.prototype.forEach.call(arrivo.children, function (p) { p.disabled = true; });
+        avviso.dici('Ci sono 10 ' + t.cibi + ': fanno una decina. ' + (t.femminile ? 'Mettile' : 'Mettili') + ' nel sacchetto!');
+        zonaSacchetto.appendChild(k.azione('Fai il sacchetto da 10', function () {
+          var pezzi = Array.prototype.filter.call(c.dentro.children, function (n) { return !n.classList.contains('sacchetto'); });
+          pezzi.slice(0, 10).forEach(function (n) { c.dentro.removeChild(n); });
+          var primoSciolto = Array.prototype.filter.call(c.dentro.children, function (n) { return !n.classList.contains('sacchetto'); })[0];
+          c.dentro.insertBefore(k.sacchetto(), primoSciolto || null);
+          sciolti = 0;
+          avviso.dici('Ecco il sacchetto: dentro ci sono 10 ' + t.cibi + '.');
+          Array.prototype.forEach.call(arrivo.children, function (p) { p.disabled = false; });
+          if (daMettere === 0) chiedi();
+        }));
+      }
+
+      function chiedi() {
         arrivo.hidden = true;
+        var conSacchetto = !!c.dentro.querySelector('.sacchetto');
         zonaDomande.appendChild(k.domanda(quantiAdesso, k.risposta(
           0, opz.sommaMax, es.somma,
-          function () { finito(errori); },
-          function () { errori++; avviso.dici('Non ancora. ' + contaTutti); }
+          function () { avviso.dici(''); finito(errori); },
+          function () {
+            errori++;
+            avviso.dici('Non ancora. ' + (conSacchetto ? 'Il sacchetto vale 10: parti da 10 e conta gli altri.' : contaTutti));
+          }
         )));
       }
     }
@@ -117,8 +154,15 @@
     k.sessione({
       modi: ['oggetti', 'calcola'],
       genera: function () {
-        var a = k.casuale(1, opz.sommaMax - 1);
-        var b = k.casuale(1, opz.sommaMax - a);
+        var a, b;
+        if (opz.oltreDieci) {
+          // Si supera il 10: serve il sacchetto
+          a = k.casuale(2, 9);
+          b = k.casuale(11 - a, 9);
+        } else {
+          a = k.casuale(1, opz.sommaMax - 1);
+          b = k.casuale(1, opz.sommaMax - a);
+        }
         return { a: a, b: b, somma: a + b };
       },
       chiave: function (es) { return es.a + '+' + es.b; },

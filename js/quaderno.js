@@ -91,9 +91,44 @@
     var zonaConsegna = el('div');
     var comandi = el('div', { classe: 'colonna-comandi' });
     var avviso = api.messaggio();
+    var spiegazione = el('div', { classe: 'spiegazione-decine', 'aria-live': 'polite' });
     k.scena.appendChild(zonaConsegna);
     k.scena.appendChild(el('div', { classe: 'colonna-area' }, [lavagna, comandi]));
+    k.scena.appendChild(spiegazione);
     k.scena.appendChild(avviso);
+
+    /*
+     * Il valore posizionale reso visibile, con lo stesso sacchetto da 10 delle attività
+     * con gli oggetti: 12 = [sacchetto] ●● = 1 decina e 2 unità. Compare al momento del
+     * riporto o del prestito e sparisce alla domanda successiva.
+     */
+    function unita(n) {
+      var riga = el('span', { classe: 'unita-visive' });
+      for (var i = 0; i < n; i++) riga.appendChild(el('span', { classe: 'unita-punto' }));
+      return riga;
+    }
+
+    function mostraDecine(n) {
+      var d = Math.floor(n / 10), u = n % 10;
+      spiegazione.innerHTML = '';
+      var figura = el('div', { classe: 'decine-figura' });
+      for (var i = 0; i < d; i++) figura.appendChild(k.sacchetto());
+      if (u) figura.appendChild(unita(u));
+      spiegazione.appendChild(el('span', { classe: 'decine-numero', testo: n + ' =' }));
+      spiegazione.appendChild(figura);
+      spiegazione.appendChild(el('span', { classe: 'decine-testo', testo:
+        d + (d === 1 ? ' decina' : ' decine') + ' e ' + u + (u === 1 ? ' unità' : ' unità') }));
+    }
+
+    function mostraPrestito() {
+      spiegazione.innerHTML = '';
+      spiegazione.appendChild(k.sacchetto());
+      spiegazione.appendChild(el('span', { classe: 'decine-numero', testo: '=' }));
+      spiegazione.appendChild(unita(10));
+      spiegazione.appendChild(el('span', { classe: 'decine-testo', testo: '1 decina aperta = 10 unità' }));
+    }
+
+    function nascondi() { spiegazione.innerHTML = ''; }
 
     function consegna(testo) {
       zonaConsegna.innerHTML = '';
@@ -107,6 +142,7 @@
 
     // Una domanda con risposta numerica (tastierino con cifre, cancella e OK)
     function numero(testo, corretto, suggerimento, poi) {
+      nascondi();
       consegna(testo);
       mostra(k.risposta(0, 99, corretto,
         function () { avviso.dici(''); poi(); },
@@ -115,6 +151,7 @@
 
     // Una domanda Sì/No (anche con i tasti S e N)
     function siNo(testo, giusto, spiegazione, poi) {
+      nascondi();
       consegna(testo);
       var nodo = el('div', { classe: 'riga-bottoni risposta' });
       function rispondi(si) {
@@ -144,6 +181,7 @@
 
     // Un bottone che fa un passo (anche con Invio o Spazio)
     function azione(testo, etichetta, fai) {
+      nascondi();
       consegna(testo);
       var bottone = el('button', { type: 'button', classe: 'bottone grande', testo: etichetta });
       var nodo = el('div', { classe: 'risposta' }, [bottone]);
@@ -162,6 +200,7 @@
     }
 
     function fine(testo) {
+      nascondi();
       consegna(testo);
       mostra(null);
     }
@@ -171,6 +210,8 @@
       siNo: siNo,
       azione: azione,
       fine: fine,
+      mostraDecine: mostraDecine,
+      mostraPrestito: mostraPrestito,
       avviso: avviso,
       errori: function () { return errori; }
     };

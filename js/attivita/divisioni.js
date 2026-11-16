@@ -40,6 +40,14 @@
       C.impostazioneEsercizi(),
       C.impostazioneAiuto('Disegno di aiuto in "Calcola"')
     ],
+    // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
+    livelli: [
+      { nome: 'Distribuire tra 2 o 3', imp: { modalita: 'distribuisci', divisoreMax: 3, quozienteMax: 5, conResto: false } },
+      { nome: 'Distribuire tra 2, 3, 4 o 5', imp: { modalita: 'distribuisci', divisoreMax: 5, quozienteMax: 5, conResto: false } },
+      { nome: 'Distribuire e calcolare', imp: { modalita: 'alterna', divisoreMax: 5, quozienteMax: 5, conResto: false } },
+      { nome: 'Con il resto, distribuendo', imp: { modalita: 'distribuisci', divisoreMax: 5, quozienteMax: 5, conResto: true } },
+      { nome: 'Con il resto, anche scritte, fino a 10', imp: { modalita: 'alterna', divisoreMax: 5, quozienteMax: 10, conResto: true } }
+    ],
     avvia: avvia
   });
 

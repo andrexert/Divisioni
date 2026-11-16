@@ -343,7 +343,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   --oggetto: 1.3rem;
   display: grid;
   grid-template-columns: repeat(5, var(--oggetto));
-  grid-auto-rows: var(--oggetto);
+  grid-auto-rows: minmax(var(--oggetto), auto);   /* la riga del sacchetto è un po' più alta */
   grid-gap: 4px;
   gap: 4px;
   justify-content: center;
@@ -770,3 +770,102 @@ img.animale, img.cibo, img.mascotte, img.mascotte-grande, img.scheda-immagine {
 }
 .cella.trattino { color: var(--testo-tenue); }
 .cella.zero-iniziale { color: var(--testo-tenue); opacity: 0.5; }
+
+/* ---------- 15. Valore posizionale: il sacchetto da 10 ---------- */
+
+/* Nella ciotola il sacchetto occupa una riga intera: [sacchetto] 10 */
+.sacchetto {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  grid-column: 1 / -1;
+}
+.sacchetto img {
+  width: calc(var(--cibo) * 1.12);    /* 28×28 pixel, ingrandito 2× (1× sui telefoni) */
+  height: calc(var(--cibo) * 1.12);
+  image-rendering: pixelated;
+  -webkit-user-drag: none;
+}
+.sacchetto-numero {
+  padding: 0 0.35rem;
+  border: 2px solid var(--accento);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--accento);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Sotto il quaderno: 12 = [sacchetto] ●● · 1 decina e 2 unità */
+.spiegazione-decine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.8rem;
+  min-height: 0;
+  margin: 0.3rem 0;
+}
+.spiegazione-decine:empty { display: none; }
+.decine-figura { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.decine-numero { font-size: 1.4rem; font-weight: 700; }
+.decine-testo { font-size: 1.05rem; color: var(--testo-tenue); }
+.unita-visive { display: inline-flex; flex-wrap: wrap; gap: 4px; max-width: 120px; }
+.unita-punto { width: 14px; height: 14px; border-radius: 50%; background: var(--pallino); }
+
+.senza-gap .sacchetto > *, .senza-gap .spiegazione-decine > *, .senza-gap .decine-figura > * { margin: 0.2rem; }
+.senza-gap .unita-visive > * { margin: 2px; }
+
+/* ---------- 16. Percorso a livelli ---------- */
+
+/* Cartellino "Livello 2 di 5" in cima all'attività */
+.livello-attuale {
+  margin: 0 auto 0.3rem;
+  width: max-content;
+  max-width: 100%;
+  padding: 0.1rem 0.8rem;
+  border-radius: 999px;
+  background: var(--accento-tenue);
+  color: var(--accento);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.annuncio-livello {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: var(--raggio);
+  background: var(--giusto-tenue);
+  color: var(--giusto);
+  font-weight: 600;
+}
+
+/* Pallino sull'ingranaggio: c'è una proposta di livello per il docente */
+#btn-impostazioni { position: relative; }
+#btn-impostazioni.con-proposta::after {
+  content: "";
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--pallino);
+  border: 2px solid var(--superficie);
+}
+
+/* Impostazioni: riquadro del percorso */
+.blocco-livello {
+  margin: 0.4rem 0 0.8rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--raggio);
+  background: var(--accento-tenue);
+}
+.livello-titolo { margin: 0 0 0.3rem; font-weight: 700; }
+.elenco-livelli { margin: 0.2rem 0 0.4rem; padding-left: 1.6rem; font-size: 0.9rem; }
+.elenco-livelli .livello-corrente { font-weight: 700; color: var(--accento); }
+.elenco-livelli .livello-corrente::after { content: "\00a0\00a0\2190\00a0adesso"; font-weight: 400; color: var(--testo-tenue); }
+.proposta-livello { margin: 0.3rem 0; padding: 0.3rem 0.6rem; border-radius: 8px; font-weight: 600; }
+.proposta-livello.su { background: var(--giusto-tenue); color: var(--giusto); }
+.proposta-livello.giu { background: var(--avanzo); color: var(--testo); }
+.proposte ul { margin: 0.3rem 0; padding-left: 1.2rem; }
+.proposte a { color: var(--accento); font-weight: 600; }
+/* Pezzi in attesa (prima si fa il sacchetto): si vede che non si possono toccare */
+.mucchio-tocca .pezzo:disabled { opacity: 0.35; outline-style: dotted; }

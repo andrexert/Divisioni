@@ -31,6 +31,14 @@
       },
       { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 3, opzioni: C.opzioniNumeriche([2, 3, 5]) }
     ],
+    // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
+    livelli: [
+      { nome: '2 cifre per 1 cifra, senza riporto', imp: { cifre: 2, moltiplicatore: 1, senzaRiporto: true } },
+      { nome: '2 cifre per 1 cifra, con il riporto', imp: { cifre: 2, moltiplicatore: 1, senzaRiporto: false } },
+      { nome: '3 cifre per 1 cifra', imp: { cifre: 3, moltiplicatore: 1, senzaRiporto: false } },
+      { nome: '2 cifre per 2 cifre', imp: { cifre: 2, moltiplicatore: 2, senzaRiporto: false } },
+      { nome: '3 cifre per 2 cifre', imp: { cifre: 3, moltiplicatore: 2, senzaRiporto: false } }
+    ],
     avvia: avvia
   });
 
@@ -39,6 +47,12 @@
 
   function genera(opz) {
     var n = opz.cifre, m = opz.moltiplicatore;
+    if (opz.senzaRiporto && m === 1) {
+      // Ogni cifra per il moltiplicatore fa al massimo 9: nessun riporto
+      var y = C.casuale(2, 4), x = 0;
+      for (var q = 0; q < n; q++) x += C.casuale(q === n - 1 ? 1 : 0, Math.floor(9 / y)) * Math.pow(10, q);
+      return { a: x, b: y, n: n, m: m };
+    }
     var a = C.casuale(Math.pow(10, n - 1), Math.pow(10, n) - 1);
     var b = 0;
     // le cifre del moltiplicatore vanno da 2 a 9: per 0 e 1 il procedimento non si vede
@@ -132,6 +146,7 @@
                   moltiplica(r, i + 1, rip);
                 }
               );
+              passo.mostraDecine(v);
             }
           }
         );
@@ -211,6 +226,7 @@
                   sommaColonna(j - 1, 1);
                 }
               );
+              passo.mostraDecine(s);
             }
           }
         );

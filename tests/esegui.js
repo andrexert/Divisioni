@@ -46,7 +46,16 @@ async function apri(browser, profilo, impostazioni) {
     if (r.url().startsWith('file:') && r.url().endsWith('/manifest.webmanifest')) return;
     pagina.erroriJs.push('file non caricato: ' + r.url());
   });
-  await pagina.addInitScript(([k, v]) => { localStorage.setItem(k, v); }, [CHIAVE, JSON.stringify(impostazioni || {})]);
+  // Se il test fissa le impostazioni di un'attività, vale "Scelgo io" (non il percorso a livelli)
+  const imp = JSON.parse(JSON.stringify(impostazioni || {}));
+  Object.keys(imp).forEach(k => { if (k !== 'generale' && k !== 'livelli' && imp[k].difficolta === undefined) imp[k].difficolta = 'manuale'; });
+  const livelli = imp.livelli; delete imp.livelli;
+  await pagina.addInitScript(([k, v, l]) => {
+    if (sessionStorage.getItem('test-pronto')) return;   // solo al primo caricamento
+    sessionStorage.setItem('test-pronto', '1');
+    localStorage.setItem(k, v);
+    if (l) localStorage.setItem('impariamo.livelli.v1', l);
+  }, [CHIAVE, JSON.stringify(imp), livelli ? JSON.stringify(livelli) : null]);
   await pagina.goto(PAGINA);
   // Sui dispositivi touch si tocca, sugli altri si clicca
   pagina.premi = profilo.contesto.hasTouch ? (sel) => pagina.locator(sel).first().tap() : (sel) => pagina.locator(sel).first().click();
@@ -130,18 +139,36 @@ async function fineSessione(p, cosa) {
 
 /* ---------- Addizioni ---------- */
 
+// Nella ciotola un sacchetto vale 10
+async function contaCiotola(p, soloRimasti) {
+  return p.evaluate((rimasti) => {
+    const c = document.querySelector('.scatola-pallini');
+    return 10 * c.querySelectorAll('.sacchetto').length +
+      Array.prototype.filter.call(c.children, n => !n.classList.contains('sacchetto') && !(rimasti && n.classList.contains('tolto'))).length;
+  }, !!soloRimasti);
+}
+
+// Mette nella ciotola tutti i pezzi in arrivo; arrivati a 10 fa il sacchetto
+async function mettiTutto(p) {
+  for (let i = 0; i < 40; i++) {
+    if (await p.locator('button:has-text("Fai il sacchetto")').count()) await p.premi('button:has-text("Fai il sacchetto")');
+    else if (await p.locator('.mucchio-tocca .pezzo:not([disabled])').count()) await p.premi('.mucchio-tocca .pezzo:not([disabled])');
+    else break;
+  }
+}
+
 async function addizioni(browser, profilo, tema, sommaMax) {
   const cosa = 'Addizioni ' + tema + ' fino a ' + sommaMax;
   const p = await apri(browser, profilo, { addizioni: { tema, sommaMax, modalita: 'alterna', numeroEsercizi: 3, aiuto: 'richiesta' } });
   await entra(p, 0, 'Con gli oggetti');
   for (let es = 0; es < 3; es++) {
     if (await p.locator('.mucchio-tocca').count()) {
-      while (await p.locator('.mucchio-tocca .pezzo').count()) await p.premi('.mucchio-tocca .pezzo');
+      await mettiTutto(p);
       await righeDa5(p, cosa);
       await controllaBordi(p, cosa);
-      const somma = await p.locator('.scatola-pallini > *').count();
+      const somma = await contaCiotola(p);
       await sbaglia(p, somma, profilo);
-      verifica((await p.textContent('.messaggio')).includes('Conta'), cosa + ': manca il suggerimento');
+      verifica(/conta/i.test(await p.textContent('.messaggio')), cosa + ': manca il suggerimento');
       await rispondi(p, somma, profilo, cosa);
     } else {
       const [a, b] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
@@ -164,15 +191,20 @@ async function sottrazioni(browser, profilo, tema, numeroMax) {
   const p = await apri(browser, profilo, { sottrazioni: { tema, numeroMax, modalita: 'alterna', numeroEsercizi: 3, aiuto: 'richiesta' } });
   await entra(p, 1, 'Con gli oggetti');
   for (let es = 0; es < 3; es++) {
-    if (await p.locator('.pezzo').count()) {
-      const a = await p.locator('.pezzo').count();
+    if (await p.locator('.scatola .pezzo, .scatola .sacchetto').count()) {
+      const a = Number((await consegna(p)).match(/(?:ha|ci sono) (\d+)/)[1]);
       const b = Number((await consegna(p)).match(/tocca (\d+)/)[1]);
-      for (let i = 0; i < b; i++) await p.premi('.pezzo:not(.tolto)');
+      for (let i = 0; i < b; i++) {
+        // Se i pezzi sciolti sono finiti si apre il sacchetto
+        if (!(await p.locator('.pezzo:not(.tolto):not([disabled])').count())) await p.premi('button:has-text("Apri il sacchetto")');
+        await p.premi('.pezzo:not(.tolto):not([disabled])');
+      }
+      verifica(await contaCiotola(p, true) === a - b, cosa + ': nella ciotola non restano ' + (a - b) + ' pezzi');
       verifica(await p.locator('.pezzo:not([disabled])').count() === 0, cosa + ': dopo aver tolto si possono togliere altri pezzi');
       await righeDa5(p, cosa);
       await controllaBordi(p, cosa);
       await sbaglia(p, a - b, profilo);
-      verifica((await p.textContent('.messaggio')).includes('Conta solo'), cosa + ': manca il suggerimento');
+      verifica(/conta/i.test(await p.textContent('.messaggio')), cosa + ': manca il suggerimento');
       await rispondi(p, a - b, profilo, cosa);
     } else {
       const [a, b] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
@@ -345,12 +377,19 @@ async function operazioneInColonna(browser, profilo, area, id, imp, usaTastiera)
       verifica(r === giusto, nome + ': esito sbagliato ' + scritta);
       if (usaTastiera) await p.keyboard.press('Enter'); else await p.premi('.esito button');
       sbaglia1 = true;
-    } else if ((m = t.match(/^Quale cifra scrivi sotto\? (\d+) non sta/))) await numero(Number(m[1]) % 10);
+    } else if ((m = t.match(/^Quale cifra scrivi sotto\? (\d+) non sta/))) {
+      const testo = await p.textContent('.spiegazione-decine');
+      const n = Number(m[1]);
+      verifica(testo.includes(Math.floor(n / 10) + (n >= 20 ? ' decine' : ' decina')), nome + ': manca il disegno delle decine per ' + n);
+      verifica(await p.locator('.spiegazione-decine .sacchetto').count() === Math.floor(n / 10), nome + ': i sacchetti non sono ' + Math.floor(n / 10));
+      await numero(n % 10);
+    }
     else if ((m = t.match(/^Puoi fare (\d+) − (\d+)\?/))) await bottone(+m[1] >= +m[2] ? 'Sì' : 'No');
     else if (/Chiedi un prestito/.test(t)) {
       const prima = await p.locator('.cella.barrata').count();
       await bottone('Chiedi il prestito');
       verifica(await p.locator('.cella.barrata').count() > prima, nome + ': il prestito non barra nessuna cifra');
+      verifica((await p.textContent('.spiegazione-decine')).includes('10 unità'), nome + ': manca il disegno del sacchetto aperto');
     } else if (/^Nella colonna delle unità c'è solo/.test(t)) await bottone(null);
     else if ((m = t.match(/^Quanto fa ([\d +×−]+)\?/))) {
       const espr = m[1].replace(/×/g, '*').replace(/−/g, '-');
@@ -359,6 +398,84 @@ async function operazioneInColonna(browser, profilo, area, id, imp, usaTastiera)
   }
   verifica(await p.locator('.fine').count() === 1, nome + ': la sessione non arriva a "Finito!"');
   await chiudi(p, nome);
+}
+
+/* ---------- Percorso a livelli e sacchetti ---------- */
+
+// Gioca una sessione intera di addizioni con gli oggetti, sempre giusto al primo tentativo
+async function sessionePerfettaAddizioni(p) {
+  for (let es = 0; es < 10 && !(await p.locator('.fine').count()); es++) {
+    if (await p.locator('.mucchio-tocca').count()) {
+      await mettiTutto(p);
+      await scrivi(p, await contaCiotola(p), { contesto: {} });
+    } else {
+      const [a, b] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
+      await scrivi(p, a + b, { contesto: {} });
+    }
+    await p.click('.esito button');
+  }
+}
+
+async function percorso(browser, profilo) {
+  // 1. Senza impostazioni si parte dal livello 1: somme entro 5
+  let p = await apri(browser, profilo, {});
+  await entra(p, 0, 'Con gli oggetti');
+  verifica((await p.textContent('.livello-attuale')) === 'Livello 1 di 5', 'percorso: non parte dal livello 1');
+  verifica(/ha [1-4] /.test(await consegna(p)), 'percorso: al livello 1 si superano le somme entro 5');
+  await chiudi(p, 'Percorso, livello 1');
+
+  // 2. Livello 4 delle addizioni: si supera il 10 e si fa il sacchetto
+  p = await apri(browser, profilo, { livelli: { addizioni: { livello: 3, sessioni: [] } } });
+  await entra(p, 0, 'Con gli oggetti');
+  verifica((await p.textContent('.livello-attuale')) === 'Livello 4 di 5', 'percorso: livello 4 non applicato');
+  await mettiTutto(p);
+  verifica(await p.locator('.scatola-pallini .sacchetto').count() === 1, 'sacchetto: oltre il 10 non si è fatto il sacchetto');
+  await controllaBordi(p, 'sacchetto nella ciotola');
+  await sbaglia(p, await contaCiotola(p), profilo);
+  verifica((await p.textContent('.messaggio')).includes('sacchetto vale 10'), 'sacchetto: manca il suggerimento "vale 10"');
+  await chiudi(p, 'Addizioni con il sacchetto');
+
+  // 3. Livello 4 delle sottrazioni: bisogna aprire il sacchetto
+  p = await apri(browser, profilo, { livelli: { sottrazioni: { livello: 3, sessioni: [] } } });
+  await entra(p, 1, 'Con gli oggetti');
+  const b = Number((await consegna(p)).match(/tocca (\d+)/)[1]);
+  let aperto = false;
+  for (let i = 0; i < b; i++) {
+    if (!(await p.locator('.pezzo:not(.tolto):not([disabled])').count())) { await p.premi('button:has-text("Apri il sacchetto")'); aperto = true; }
+    await p.premi('.pezzo:not(.tolto):not([disabled])');
+  }
+  verifica(aperto, 'sacchetto: nelle sottrazioni oltre il 10 non serviva aprirlo');
+  await chiudi(p, 'Sottrazioni aprendo il sacchetto');
+
+  // 4. Passaggio automatico: due sessioni perfette → annuncio e livello 2
+  p = await apri(browser, profilo, { generale: { avanzamento: 'automatico' } });
+  await entra(p, 0, 'Con gli oggetti');
+  await sessionePerfettaAddizioni(p);
+  verifica(!(await p.locator('.annuncio-livello').count()), 'percorso: si sale dopo una sola sessione');
+  await p.click('button:has-text("Ancora")');
+  await sessionePerfettaAddizioni(p);
+  verifica((await p.textContent('.annuncio-livello')).includes('livello 2'), 'percorso: manca l\'annuncio del livello 2');
+  await p.click('button:has-text("Ancora")');
+  verifica((await p.textContent('.livello-attuale')) === 'Livello 2 di 5', 'percorso: il livello 2 non è applicato');
+  await chiudi(p, 'Percorso automatico');
+
+  // 5. Decide il docente: pallino sull'ingranaggio, proposta, cambio di livello a mano
+  p = await apri(browser, profilo, {});
+  await entra(p, 0, 'Con gli oggetti');
+  await sessionePerfettaAddizioni(p);
+  await p.click('button:has-text("Ancora")');
+  await sessionePerfettaAddizioni(p);
+  verifica(!(await p.locator('.annuncio-livello').count()), 'percorso: con "decide il docente" si è saliti da soli');
+  verifica(await p.locator('#btn-impostazioni.con-proposta').count() === 1, 'percorso: manca il pallino della proposta');
+  await p.click('#btn-impostazioni');
+  await p.fill('#parola-docente', 'docente');
+  await p.press('#parola-docente', 'Enter');
+  verifica((await p.textContent('.proposte')).includes('pronto per il livello 2'), 'percorso: manca la proposta per il docente');
+  await controllaBordi(p, 'impostazioni con i livelli');
+  await p.click('#livello-addizioni button:has-text("Livello successivo")');
+  verifica((await p.textContent('#livello-addizioni .livello-titolo')).includes('livello 2'), 'percorso: il docente non riesce a cambiare livello');
+  verifica(await p.locator('#btn-impostazioni.con-proposta').count() === 0, 'percorso: il pallino resta dopo il cambio');
+  await chiudi(p, 'Percorso deciso dal docente');
 }
 
 /* ---------- Menu, impostazioni, aspetto ---------- */
@@ -418,6 +535,7 @@ async function menuEImpostazioni(browser, profilo) {
     const prima = errori;
     console.log('\n' + profilo.nome);
     await menuEImpostazioni(browser, profilo);
+    await percorso(browser, profilo);
     await addizioni(browser, profilo, 'conigli', 10);
     await addizioni(browser, profilo, 'pallini', 20);
     await sottrazioni(browser, profilo, 'scoiattoli', 10);

@@ -47,6 +47,14 @@
       C.impostazioneEsercizi(),
       C.impostazioneAiuto('Aiuto in "Tabelline" (conta a salti)')
     ],
+    // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
+    livelli: [
+      { nome: 'Gruppi uguali, dal 2 al 5', imp: { modalita: 'gruppi', tabellina: 'fino5' } },
+      { nome: 'Gruppi e tabelline, dal 2 al 5', imp: { modalita: 'alterna', tabellina: 'fino5' } },
+      { nome: 'Tabelline dal 2 al 5', imp: { modalita: 'tabelline', tabellina: 'fino5' } },
+      { nome: 'Gruppi e tabelline, fino al 10', imp: { modalita: 'alterna', tabellina: 'fino10' } },
+      { nome: 'Tabelline fino al 10', imp: { modalita: 'tabelline', tabellina: 'fino10' } }
+    ],
     avvia: avvia
   });
 
