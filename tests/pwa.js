@@ -53,7 +53,8 @@ function verifica(condizione, descrizione) {
     await contesto.setOffline(true);
     await p.reload();
     verifica((await p.textContent('#titolo')) === 'Impariamo insieme', 'senza rete: l\'app si apre');
-    await p.click('.scheda-attivita >> nth=1');
+    await p.click('.scheda-attivita >> nth=3');                  // area "Divisioni"
+    await p.click('.scheda-attivita:has-text("In colonna")');  // un esercizio in corso
     const immagini = await p.evaluate(() => Promise.all(
       [document.querySelector('img.mascotte').src, getComputedStyle(document.body, '::before').backgroundImage.replace(/^url\("(.*)"\)$/, '$1')]
         .map(src => new Promise(ok => { const i = new Image(); i.onload = () => ok(true); i.onerror = () => ok(false); i.src = src; }))
@@ -71,7 +72,8 @@ function verifica(condizione, descrizione) {
     verifica(dopo.length === 1 && dopo[0] === 'impariamo-prova-2', 'nuova pubblicazione: copia aggiornata ' + JSON.stringify(dopo));
     verifica(await p.evaluate(() => window.segnaposto) === 'pagina vecchia', 'durante un esercizio l\'app non si ricarica');
     await Promise.all([p.waitForEvent('load'), p.click('#btn-menu')]);
-    verifica(await p.evaluate(() => window.segnaposto) === undefined, 'tornando al menu l\'app passa alla versione nuova');
+    verifica(await p.evaluate(() => window.segnaposto) === undefined, 'uscendo dall\'esercizio l\'app passa alla versione nuova');
+    verifica((await p.textContent('#titolo')) === 'Impariamo insieme', 'dopo l\'aggiornamento si riparte dal menu');
 
     // Nuova pubblicazione mentre si è sul menu: l'app si ricarica da sola
     await p.evaluate(() => { window.segnaposto = 'pagina vecchia'; });

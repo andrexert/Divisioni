@@ -1,12 +1,18 @@
 # Impariamo insieme
 
-Un piccolo programma didattico per ragazzi nello spettro autistico. È un **percorso verso la divisione** in cinque tappe, ciascuna con la sua mascotte:
+Un piccolo programma didattico per ragazzi nello spettro autistico. È un **percorso verso la divisione** organizzato in quattro **aree**, una per operazione, ciascuna con la sua mascotte:
 
-1. **Addizioni** (orsetto): mettere insieme.
-2. **Sottrazioni** (ranocchia): togliere.
-3. **Moltiplicazioni** (riccio): gruppi uguali e tabelline.
-4. **Divisioni** (volpe): dividere in parti uguali.
-5. **Divisioni in colonna** (gufo): il procedimento scritto, un passo alla volta.
+1. **Addizioni** (orsetto)
+2. **Sottrazioni** (ranocchia)
+3. **Moltiplicazioni** (riccio)
+4. **Divisioni** (volpe)
+
+Il menu principale mostra solo le quattro aree, per non affollare lo schermo. Dentro ogni area ci sono due scelte:
+
+- **Con gli oggetti**: animali e cibo da contare, mettere insieme, togliere, raggruppare o dividere, poi l'operazione scritta.
+- **In colonna**: il procedimento sul quaderno a quadretti, un passo alla volta, sempre con il gufo, "il maestro del quaderno".
+
+Il pulsante in alto a sinistra risale sempre di un livello: dall'attività all'area, dall'area al menu.
 
 Ogni tappa usa gli strumenti della precedente: le tabelline servono per la divisione in colonna, la sottrazione per i suoi resti. Le attività con gli oggetti usano gli stessi animali e lo stesso cibo, così il ragazzo ritrova sempre un mondo che conosce.
 
@@ -55,6 +61,8 @@ Sono disponibili:
 - **Addizioni** e **Sottrazioni:** tipo di esercizio (con gli oggetti, calcola, alterna), animali e cibo, numero massimo (5, 10 o 20), numero di esercizi, disegno di aiuto.
 - **Moltiplicazioni:** tipo di esercizio (gruppi uguali, tabelline, alterna), animali e cibo, quali tabelline (dal 2 al 5, dal 2 al 10 o una sola), numero di esercizi, aiuto con i salti.
 - **Divisioni:** tipo di esercizio, divisore massimo, risultato massimo, divisioni con il resto, numero di esercizi per sessione e disegno di aiuto.
+- **Addizioni in colonna** e **Sottrazioni in colonna:** cifre dei numeri (2, 3 o 4), con o senza riporto (o prestito), numero di esercizi.
+- **Moltiplicazioni in colonna:** cifre del numero da moltiplicare (2 o 3), moltiplicatore a 1 o 2 cifre, numero di esercizi.
 - **Divisioni in colonna:** cifre del dividendo (2, 3 o 4), cifre del divisore (1 o 2), divisioni con il resto, sottrazioni scritte o metodo breve, tabellina di aiuto, numero di esercizi.
 
 ## Le attività "Addizioni", "Sottrazioni" e "Moltiplicazioni"
@@ -68,6 +76,16 @@ Hanno la stessa struttura delle divisioni: prima **con gli oggetti**, poi **calc
 **Moltiplicazioni.** In "Gruppi uguali": "Ci sono 4 scoiattoli. Dai 3 ghiande a ogni scoiattolo." Una ciotola piena non accetta altro. Se il ragazzo sbaglia il totale, il suggerimento propone di contare a salti ("3, 6, 9..."), e nel riquadro finale compare l'addizione ripetuta sopra la moltiplicazione: `3 + 3 + 3 + 3 = 12`, poi `3 × 4 = 12`. In "Tabelline" l'aiuto non è la tabellina già risolta, che si copierebbe e basta, ma la fila dei salti da contare: "Conta 4 salti di 3: 3 · 6 · 9 · 12 · ...".
 
 Convenzione di scrittura: `3 × 4` è "3 preso 4 volte" (`3 + 3 + 3 + 3`), cioè 4 gruppi da 3. Conviene verificare che sia la stessa usata dalle insegnanti.
+
+## Addizioni, sottrazioni e moltiplicazioni in colonna
+
+Funzionano come la divisione in colonna: quaderno a quadretti, la colonna su cui si lavora evidenziata in giallo, una domanda alla volta, risposta con il tastierino (o con la tastiera del computer). Sopra le colonne ci sono le sigle usate a scuola: **u** (unità), **da** (decine), **h** (centinaia), **k** (migliaia).
+
+**Addizione.** Per ogni colonna, da destra: "Quanto fa 7 + 5?". Se il risultato non sta in un quadretto (12), "Scrivi sotto solo le unità" → 2, e l'1 sale in alto nella colonna dopo: è il riporto, e alla colonna successiva la domanda diventa "Quanto fa 8 + 5 + 1?".
+
+**Sottrazione.** Con il prestito attivo, per ogni colonna il ragazzo decide prima "Puoi fare 3 − 7?": decidere è proprio ciò che si impara. Se non si può, preme "Chiedi il prestito": la cifra a sinistra viene barrata e il nuovo valore compare sopra, mentre quella della colonna riceve un 1 piccolo davanti (13). Se a sinistra c'è uno 0, il prestito arriva da più lontano e gli 0 diventano 9, come in 1003 − 7. Gli 0 all'inizio del risultato sono mostrati più chiari, perché non contano.
+
+**Moltiplicazione.** "Quanto fa 7 × 4?", poi "+ il riporto" quando c'è, con il riporto scritto in alto sopra la cifra successiva. Con il moltiplicatore a due cifre la seconda riga comincia con un trattino nelle unità (convenzione da verificare con le insegnanti: alcune scuole scrivono 0 o lasciano vuoto) e alla fine si sommano le due righe, colonna per colonna.
 
 ## L'attività "Divisioni"
 
@@ -120,7 +138,7 @@ Per aggiungere nuovi temi basta mettere in `img/` un animale e un cibo con lo st
 
 ## Test automatici
 
-`tests/esegui.js` è un "alunno automatico" che usa l'app su cinque dispositivi simulati: computer con Chrome, computer con Safari (WebKit, lo stesso motore), iPhone, iPad e telefono Android. Fa addizioni, sottrazioni e moltiplicazioni (con entrambi i tipi di risposta), tutti i temi delle divisioni con gli oggetti e le divisioni in colonna con impostazioni diverse, sbaglia apposta per provare i suggerimenti, usa anche solo la tastiera e controlla che la pagina non esca mai dai bordi dello schermo. `tests/pwa.js` controlla che la web app sia installabile e funzioni senza rete.
+`tests/esegui.js` è un "alunno automatico" che usa l'app su cinque dispositivi simulati: computer con Chrome, computer con Safari (WebKit, lo stesso motore), iPhone, iPad e telefono Android. Naviga tra le aree del menu, fa addizioni, sottrazioni e moltiplicazioni con gli oggetti e in colonna (con riporto, prestito anche a cascata, moltiplicatore a due cifre), tutti i temi delle divisioni con gli oggetti e le divisioni in colonna con impostazioni diverse, sbaglia apposta per provare i suggerimenti, usa anche solo la tastiera e controlla che la pagina non esca mai dai bordi dello schermo. `tests/pwa.js` controlla che la web app sia installabile e funzioni senza rete.
 
 I test girano da soli su GitHub a ogni pull request (`.github/workflows/verifica.yml`): se qualcosa non va, si vede prima che la modifica vada online. Per lanciarli sul proprio computer servono Node.js e Python 3:
 
@@ -153,11 +171,16 @@ img/                        immagini in pixel art (animali, cibo, mascotte)
 css/stile.css               aspetto grafico (colori, dimensioni, alto contrasto)
 js/app.js                   nucleo: menu, impostazioni, voce, suoni, tastiera, sfondi
 js/comune.js                parti comuni: temi, ciotole, risposte, svolgimento della sessione
-js/attivita/addizioni.js        1. Addizioni
-js/attivita/sottrazioni.js      2. Sottrazioni
-js/attivita/moltiplicazioni.js  3. Moltiplicazioni
-js/attivita/divisioni.js        4. Divisioni (con gli oggetti)
-js/attivita/colonna.js          5. Divisioni in colonna
+js/quaderno.js              quaderno a quadretti e passi guidati delle operazioni in colonna
+js/aree.js                  le quattro aree del menu (una per operazione)
+js/attivita/addizioni.js                 area 1, con gli oggetti
+js/attivita/addizioni-colonna.js         area 1, in colonna
+js/attivita/sottrazioni.js               area 2, con gli oggetti
+js/attivita/sottrazioni-colonna.js       area 2, in colonna
+js/attivita/moltiplicazioni.js           area 3, con gli oggetti
+js/attivita/moltiplicazioni-colonna.js   area 3, in colonna
+js/attivita/divisioni.js                 area 4, con gli oggetti
+js/attivita/colonna.js                   area 4, in colonna
 ```
 
 ## Aggiungere una nuova attività
@@ -168,7 +191,9 @@ js/attivita/colonna.js          5. Divisioni in colonna
 ```js
 Impariamo.registra({
   id: 'frazioni',                 // identificativo unico (usato anche per salvare le impostazioni)
-  passo: 6,                       // numero della tappa mostrato nel menu (facoltativo)
+  area: 'divisioni',              // area del menu in cui compare (vedi js/aree.js);
+  etichetta: 'Con le frazioni',   // nome della scheda dentro l'area
+                                  // senza area, l'attività compare direttamente nel menu
   titolo: 'Frazioni',
   icona: '½',                     // oppure immagine: 'img/...png' (diventa anche la mascotte)
   colore: '#13814a',              // colore della scheda nel menu e del fumetto

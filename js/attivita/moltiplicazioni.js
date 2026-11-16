@@ -19,7 +19,8 @@
 
   Impariamo.registra({
     id: 'moltiplicazioni',
-    passo: 3,
+    area: 'moltiplicazioni',
+    etichetta: 'Con gli oggetti',
     titolo: 'Moltiplicazioni',
     icona: '×',
     immagine: 'img/riccio.png',
