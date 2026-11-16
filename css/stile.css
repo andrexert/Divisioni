@@ -1,25 +1,52 @@
 /*
  * Stile pensato per ragazzi nello spettro autistico:
- * colori tenui e pochi, niente animazioni lampeggianti, elementi grandi,
+ * niente animazioni lampeggianti, elementi grandi,
  * una sola cosa importante per volta, disposizione sempre uguale.
+ *
+ * Tre tavolozze, scelte dal docente nelle impostazioni:
+ *  - vivaci (predefinita): colori allegri ma con un ruolo preciso
+ *    (blu = cosa toccare, arancione = oggetti, giallo = dove guardare, verde = giusto)
+ *  - tenui: per i ragazzi con ipersensibilità visiva
+ *  - alto contrasto: per difficoltà visive
  */
 
 :root {
-  --sfondo: #f5f2ea;
+  --sfondo: #e8f3ff;
   --superficie: #ffffff;
+  --testo: #18212b;
+  --testo-tenue: #4a5868;
+  --accento: #1565d8;          /* bottoni e cose da toccare */
+  --accento-tenue: #d3e5ff;
+  --bordo: #a9c8ee;
+  --barra: #1565d8;
+  --barra-testo: #ffffff;
+  --pallino: #ff7417;          /* oggetti da contare */
+  --scatola: #8b5cf6;          /* scatole */
+  --evidenzia: #ffe14d;        /* il numero su cui si sta lavorando */
+  --giusto: #13814a;
+  --giusto-tenue: #d2f7e1;
+  --avanzo: #ffe2c2;
+  --raggio: 16px;
+}
+
+:root.colori-tenui {
+  --sfondo: #f5f2ea;
   --testo: #1f2a33;
   --testo-tenue: #5b6670;
   --accento: #2f6690;
   --accento-tenue: #dce9f3;
   --bordo: #c9c3b6;
+  --barra: #ffffff;
+  --barra-testo: #1f2a33;
   --pallino: #d9822b;
+  --scatola: #c9c3b6;
+  --evidenzia: #dce9f3;
   --giusto: #2e7d5b;
   --giusto-tenue: #e1f1e8;
   --avanzo: #fbeedd;
-  --raggio: 16px;
 }
 
-/* Alto contrasto: scelto dal docente nelle impostazioni */
+/* Alto contrasto: ha la precedenza sulle altre tavolozze */
 :root.alto-contrasto {
   --sfondo: #ffffff;
   --superficie: #ffffff;
@@ -28,7 +55,11 @@
   --accento: #003a8c;
   --accento-tenue: #fff3a3;
   --bordo: #000000;
+  --barra: #ffffff;
+  --barra-testo: #000000;
   --pallino: #000000;
+  --scatola: #000000;
+  --evidenzia: #fff3a3;
   --giusto: #00552e;
   --giusto-tenue: #d6f5e3;
   --avanzo: #fff3a3;
@@ -59,10 +90,13 @@ button:focus-visible { outline: 4px solid var(--accento); outline-offset: 3px; }
   justify-content: space-between;
   gap: 1rem;
   padding: 0.6rem 1rem;
-  background: var(--superficie);
+  background: var(--barra);
+  color: var(--barra-testo);
   border-bottom: 2px solid var(--bordo);
 }
 .barra h1 { margin: 0; font-size: 1.3rem; flex: 1; text-align: center; }
+.barra .suggerimento { color: var(--barra-testo); }
+.bottone-barra { color: var(--accento); font-weight: 600; }
 .bottone-barra {
   min-width: 3rem;
   min-height: 3rem;
@@ -155,19 +189,21 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   align-items: center;
   gap: 0.4rem;
   padding: 1.4rem 1rem;
-  border: 3px solid var(--bordo);
+  border: 3px solid var(--colore-attivita, var(--accento));
+  border-top-width: 10px;
   border-radius: var(--raggio);
   background: var(--superficie);
 }
-.scheda-attivita:hover { border-color: var(--accento); }
+.scheda-attivita:hover { background: var(--accento-tenue); }
+.colori-tenui .scheda-attivita, .alto-contrasto .scheda-attivita { --colore-attivita: var(--accento); }
 .scheda-icona {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 4rem; height: 4rem;
   border-radius: 50%;
-  background: var(--accento-tenue);
-  color: var(--accento);
+  background: var(--colore-attivita, var(--accento));
+  color: #ffffff;
   font-size: 2.2rem;
   font-weight: 700;
 }
@@ -232,7 +268,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   width: 7.5rem;
   min-height: 7.5rem;
   padding: 0.6rem;
-  border: 3px solid var(--bordo);
+  border: 4px solid var(--scatola);
   border-radius: var(--raggio);
   background: var(--superficie);
 }
@@ -276,7 +312,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   width: 3.6rem; height: 3.6rem;
   border: 3px solid var(--accento);
   border-radius: var(--raggio);
-  background: var(--superficie);
+  background: var(--accento-tenue);
   color: var(--accento);
   font-size: 1.5rem;
   font-weight: 700;
@@ -313,7 +349,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   text-align: center;
   border-radius: var(--raggio);
   background: var(--giusto-tenue);
-  border: 2px solid var(--giusto);
+  border: 3px solid var(--giusto);
 }
 .esito-lode { font-size: 1.5rem; font-weight: 700; color: var(--giusto); margin: 0.3rem 0; }
 .esito .operazione { font-size: 2rem; }
@@ -394,7 +430,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   position: relative;
 }
 /* Il numero su cui si sta lavorando */
-.cella.attiva, .colonna-divisore.attiva { background: var(--accento-tenue); }
+.cella.attiva, .colonna-divisore.attiva { background: var(--evidenzia); }
 /* La casella dove scrivere la risposta */
 .cella.da-scrivere {
   border: 3px dashed var(--accento);

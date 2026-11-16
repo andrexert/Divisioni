@@ -18,7 +18,7 @@ Le impostazioni si aprono **tenendo premuto** l'ingranaggio in alto a destra per
 
 Sono disponibili:
 
-- **Generali:** lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, caratteri più grandi, alto contrasto.
+- **Generali:** lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, colori vivaci o tenui (per i ragazzi con ipersensibilità visiva), caratteri più grandi, alto contrasto.
 - **Divisioni:** tipo di esercizio, divisore massimo, risultato massimo, divisioni con il resto, numero di esercizi per sessione e disegno di aiuto.
 - **Divisioni in colonna:** cifre del dividendo (2, 3 o 4), cifre del divisore (1 o 2), divisioni con il resto, sottrazioni scritte o metodo breve, tabellina di aiuto, numero di esercizi.
 
@@ -54,7 +54,7 @@ Il programma segue alcuni principi pensati per i ragazzi nello spettro autistico
 
 - Struttura sempre uguale: consegna in alto, materiale al centro, risposta in basso, e "Esercizio 2 di 5" per sapere quanto manca.
 - Niente timer, niente animazioni lampeggianti e nessun passaggio automatico: si va avanti solo premendo "Avanti".
-- Colori tenui e pochi, e suoni disattivati di default (si possono attivare).
+- Colori vivaci ma con un ruolo fisso: blu per ciò che si tocca, arancione per gli oggetti da contare, giallo evidenziatore per il numero su cui si lavora, verde per la risposta giusta. Per chi è sensibile agli stimoli visivi c'è la tavolozza "tenui". I suoni sono disattivati di default.
 - Gli errori non vengono segnalati con il rosso o con una X. Il numero sbagliato si spegne e compare un suggerimento concreto ("Conta i pallini dentro una scatola"), così il ragazzo non ripete lo stesso tentativo.
 - Il feedback positivo è sempre lo stesso ("Esatto!") e ripete l'operazione completa, per renderlo prevedibile.
 - Le risposte si danno con bottoni grandi, senza tastiera.

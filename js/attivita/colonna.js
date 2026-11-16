@@ -38,6 +38,7 @@
     id: 'colonna',
     titolo: 'Divisioni in colonna',
     icona: '÷',
+    colore: '#8b5cf6',
     descrizione: 'Un passo alla volta',
     impostazioni: [
       { chiave: 'cifreDividendo', etichetta: 'Cifre del numero da dividere', predefinito: 2, opzioni: opzioniNumeriche([2, 3, 4]) },

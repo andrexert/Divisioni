@@ -25,6 +25,7 @@
     id: 'divisioni',
     titolo: 'Divisioni',
     icona: ':',
+    colore: '#ff7417',
     descrizione: 'Dividere in parti uguali',
     impostazioni: [
       {

@@ -22,6 +22,10 @@
   var IMPOSTAZIONI_GENERALI = [
     { chiave: 'voce', etichetta: 'Lettura vocale delle consegne', predefinito: false, opzioni: SI_NO },
     { chiave: 'suoni', etichetta: 'Suoni di conferma (leggeri)', predefinito: false, opzioni: SI_NO },
+    {
+      chiave: 'colori', etichetta: 'Colori', predefinito: 'vivaci',
+      opzioni: [{ valore: 'vivaci', testo: 'Vivaci' }, { valore: 'tenui', testo: 'Tenui (più calmi)' }]
+    },
     { chiave: 'caratteriGrandi', etichetta: 'Caratteri più grandi', predefinito: false, opzioni: SI_NO },
     { chiave: 'altoContrasto', etichetta: 'Alto contrasto', predefinito: false, opzioni: SI_NO }
   ];
@@ -88,6 +92,7 @@
     var radice = document.documentElement;
     radice.classList.toggle('caratteri-grandi', !!impostazioni.generale.caratteriGrandi);
     radice.classList.toggle('alto-contrasto', !!impostazioni.generale.altoContrasto);
+    radice.classList.toggle('colori-tenui', impostazioni.generale.colori === 'tenui');
   }
 
   /* ---------- Voce e suoni ---------- */
@@ -219,6 +224,7 @@
     elencoAttivita.forEach(function (a) {
       griglia.appendChild(el('button', {
         type: 'button', classe: 'scheda-attivita',
+        style: a.colore ? '--colore-attivita: ' + a.colore : null,
         onclick: function () { avviaAttivita(a); }
       }, [
         el('span', { classe: 'scheda-icona', 'aria-hidden': 'true', testo: a.icona }),
