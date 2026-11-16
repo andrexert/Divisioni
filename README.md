@@ -18,7 +18,7 @@ Le impostazioni si aprono **tenendo premuto** l'ingranaggio in alto a destra per
 
 Sono disponibili:
 
-- **Generali:** lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, colori vivaci o tenui (per i ragazzi con ipersensibilità visiva), caratteri più grandi, alto contrasto.
+- **Generali:** lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, colori vivaci o tenui (per i ragazzi con ipersensibilità visiva), sfondi illustrati sì o no, caratteri più grandi, alto contrasto.
 - **Divisioni:** tipo di esercizio, divisore massimo, risultato massimo, divisioni con il resto, numero di esercizi per sessione e disegno di aiuto.
 - **Divisioni in colonna:** cifre del dividendo (2, 3 o 4), cifre del divisore (1 o 2), divisioni con il resto, sottrazioni scritte o metodo breve, tabellina di aiuto, numero di esercizi.
 
@@ -34,7 +34,7 @@ I temi disponibili sono gattini e pesci, cagnolini e ossi, coniglietti e carote,
 
 ## L'attività "Divisioni in colonna"
 
-La divisione è disposta come sul quaderno: il dividendo a sinistra, il divisore a destra oltre la linea verticale, il risultato sotto il divisore. Il programma guida il procedimento un passo alla volta, con una sola domanda per volta:
+La divisione è scritta su un foglio a quadretti, con ogni cifra nel suo quadretto, ed è disposta come sul quaderno: il dividendo a sinistra, il divisore a destra oltre la linea verticale, il risultato sotto il divisore. Il programma guida il procedimento un passo alla volta, con una sola domanda per volta:
 
 1. "Il 4 sta nell'1?" Si risponde Sì o No. Se la risposta è No, si prende anche la cifra successiva.
 2. "Quante volte il 4 sta nel 15?" La cifra va nel risultato.
@@ -67,6 +67,8 @@ Alla fine della sessione compare una piccola nota per il docente con il numero d
 
 Gli animali e le mascotte (la volpe per le divisioni, il gufo per le divisioni in colonna) sono in pixel art, generati con [PixelLab](https://www.pixellab.ai/) e salvati come PNG nella cartella `img/`. Il programma non contatta PixelLab né altri servizi: le immagini sono file normali, quindi tutto continua a funzionare offline e non serve alcuna chiave API. Le immagini del cibo sono state ritagliate a 25×25 pixel e vengono mostrate al doppio della dimensione. Gli animali (64×64) sono mostrati a 128 o 64 pixel. Si usano sempre multipli esatti con `image-rendering: pixelated`, così i pixel restano nitidi.
 
+Ogni schermata ha uno sfondo in pixel art: colline per il menu, un prato per le divisioni con gli animali, un bosco al tramonto per il gufo delle divisioni in colonna. Il lavoro sta sempre su un pannello chiaro al centro, così lo sfondo resta ai margini e non disturba. Gli sfondi si possono spegnere dalle impostazioni e si spengono da soli con i colori tenui o con l'alto contrasto, perché in quei casi l'obiettivo è ridurre gli stimoli visivi.
+
 Per aggiungere nuovi temi basta mettere in `img/` un animale e un cibo con lo stesso nome usato in `TEMI` dentro `js/attivita/divisioni.js`.
 
 ## Struttura dei file
@@ -91,6 +93,7 @@ Impariamo.registra({
   titolo: 'Moltiplicazioni',
   icona: '×',                     // oppure immagine: 'img/...png' (diventa anche la mascotte)
   colore: '#13814a',              // colore della scheda nel menu e del fumetto
+  sfondo: 'img/sfondo-....png',   // sfondo illustrato durante l'attività (facoltativo)
   descrizione: 'Gruppi uguali',
   impostazioni: [                 // compaiono da sole nella schermata Impostazioni
     { chiave: 'max', etichetta: 'Numero massimo', predefinito: 5,

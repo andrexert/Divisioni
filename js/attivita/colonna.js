@@ -39,6 +39,7 @@
     titolo: 'Divisioni in colonna',
     icona: '÷',
     immagine: 'img/gufo.png',
+    sfondo: 'img/sfondo-bosco.png',
     colore: '#8b5cf6',
     descrizione: 'Un passo alla volta',
     impostazioni: [
@@ -400,7 +401,8 @@
 
         lavagna.appendChild(griglia);
         lavagna.appendChild(el('div', { classe: 'colonna-destra' }, [
-          el('div', { classe: 'colonna-divisore' + (evidenziaDivisore ? ' attiva' : ''), testo: String(d) }),
+          el('div', { classe: 'colonna-divisore' + (evidenziaDivisore ? ' attiva' : '') },
+            String(d).split('').map(function (c) { return el('span', { classe: 'cella', testo: c }); })),
           quoz
         ]));
       }

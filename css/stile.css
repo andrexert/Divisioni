@@ -26,6 +26,7 @@
   --giusto: #13814a;
   --giusto-tenue: #d2f7e1;
   --avanzo: #ffe2c2;
+  --quadretto: rgba(21, 101, 216, 0.22);
   --raggio: 16px;
 }
 
@@ -44,6 +45,7 @@
   --giusto: #2e7d5b;
   --giusto-tenue: #e1f1e8;
   --avanzo: #fbeedd;
+  --quadretto: rgba(0, 0, 0, 0.1);
 }
 
 /* Alto contrasto: ha la precedenza sulle altre tavolozze */
@@ -63,6 +65,7 @@
   --giusto: #00552e;
   --giusto-tenue: #d6f5e3;
   --avanzo: #fff3a3;
+  --quadretto: rgba(0, 0, 0, 0.25);
 }
 
 html { font-size: 20px; }
@@ -195,7 +198,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   background: var(--superficie);
 }
 .scheda-attivita:hover { background: var(--accento-tenue); }
-.colori-tenui .scheda-attivita, .alto-contrasto .scheda-attivita { --colore-attivita: var(--accento); }
+.colori-tenui .scheda-attivita, .alto-contrasto .scheda-attivita { --colore-attivita: var(--accento) !important; }
 .scheda-icona {
   display: flex;
   align-items: center;
@@ -410,14 +413,21 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
 }
 
 .colonna-lavagna {
-  --cella: 2.3rem;
-  --altezza: 2.9rem;
+  /* Quaderno a quadretti: ogni cifra sta in un quadretto, come sul quaderno di scuola.
+     Il margine interno è di un quadretto, così la quadrettatura combacia con le cifre. */
+  --cella: 2.6rem;
+  --altezza: 2.6rem;
   display: flex;
   align-items: flex-start;
-  padding: 1rem 1.4rem;
-  background: var(--superficie);
+  padding: var(--cella);
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(to right, var(--quadretto) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--quadretto) 1px, transparent 1px);
+  background-size: var(--cella) var(--cella);
   border: 2px solid var(--bordo);
-  border-radius: var(--raggio);
+  border-radius: 6px;
+  box-shadow: 0 3px 0 var(--bordo);
   font-size: 1.9rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -450,22 +460,17 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   color: var(--accento);
 }
 
+/* Le righe della divisione sono ombre interne: non occupano spazio e non spostano i quadretti */
 .colonna-destra {
   display: grid;
   grid-auto-rows: var(--altezza);
   align-self: stretch;
-  min-width: 4.5rem;
-  margin-left: 0.5rem;
-  border-left: 3px solid var(--testo);
+  min-width: calc(var(--cella) * 3);
+  box-shadow: inset 3px 0 0 var(--testo);
 }
-.colonna-divisore {
-  display: flex;
-  align-items: center;
-  padding: 0 0.7rem;
-  border-bottom: 3px solid var(--testo);
-}
-.colonna-quoziente { display: flex; align-items: center; padding: 0 0.5rem; }
-.colonna-quoziente .cella { width: var(--cella); height: calc(var(--altezza) - 0.3rem); }
+.colonna-divisore { display: flex; box-shadow: inset 0 -3px 0 var(--testo); }
+.colonna-quoziente { display: flex; }
+.colonna-divisore .cella, .colonna-quoziente .cella { width: var(--cella); height: var(--altezza); }
 
 .colonna-comandi { display: flex; align-items: center; min-height: 6rem; }
 .bottone.grande { min-width: 6rem; min-height: 4rem; font-size: 1.4rem; }
@@ -553,3 +558,27 @@ img.animale, img.cibo, img.mascotte, img.mascotte-grande, img.scheda-immagine {
 
 .esito-testa { display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
 .colori-tenui main, .alto-contrasto main { --colore-attivita: var(--accento) !important; }
+
+/* ---------- Sfondi illustrati (pixel art, solo con colori vivaci) ---------- */
+
+.con-sfondo body {
+  background-color: var(--sfondo);
+  background-image: var(--sfondo-immagine);
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  image-rendering: pixelated;
+  min-height: 100vh;
+}
+/* Il lavoro sta su un pannello chiaro: lo sfondo resta ai margini e non disturba */
+.con-sfondo main {
+  margin-top: 1.2rem;
+  margin-bottom: 1.2rem;
+  background: rgba(244, 249, 255, 0.985);
+  border-radius: 24px;
+  box-shadow: 0 6px 24px rgba(0, 30, 80, 0.18);
+}
+@media (max-width: 1000px) {
+  .con-sfondo main { margin-left: 12px; margin-right: 12px; }
+}

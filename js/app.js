@@ -12,6 +12,7 @@
   'use strict';
 
   var CHIAVE_ARCHIVIO = 'impariamo.impostazioni.v1';
+  var SFONDO_MENU = 'img/sfondo-menu.png';
   var DURATA_PRESSIONE_LUNGA = 1500; // millisecondi
 
   var SI_NO = [
@@ -26,6 +27,7 @@
       chiave: 'colori', etichetta: 'Colori', predefinito: 'vivaci',
       opzioni: [{ valore: 'vivaci', testo: 'Vivaci' }, { valore: 'tenui', testo: 'Tenui (più calmi)' }]
     },
+    { chiave: 'sfondi', etichetta: 'Sfondi illustrati', predefinito: true, opzioni: SI_NO },
     { chiave: 'caratteriGrandi', etichetta: 'Caratteri più grandi', predefinito: false, opzioni: SI_NO },
     { chiave: 'altoContrasto', etichetta: 'Alto contrasto', predefinito: false, opzioni: SI_NO }
   ];
@@ -99,6 +101,17 @@
     radice.classList.toggle('caratteri-grandi', !!impostazioni.generale.caratteriGrandi);
     radice.classList.toggle('alto-contrasto', !!impostazioni.generale.altoContrasto);
     radice.classList.toggle('colori-tenui', impostazioni.generale.colori === 'tenui');
+    // Gli sfondi si vedono solo con i colori vivaci: con "tenui" o alto contrasto
+    // l'obiettivo è ridurre gli stimoli visivi, quindi si spengono da soli
+    radice.classList.toggle('con-sfondo', !!impostazioni.generale.sfondi &&
+      impostazioni.generale.colori === 'vivaci' && !impostazioni.generale.altoContrasto);
+  }
+
+  function impostaSfondo(percorso) {
+    // Indirizzo assoluto: un url() relativo dentro una variabile CSS verrebbe
+    // risolto rispetto al file CSS (css/) invece che rispetto alla pagina
+    var assoluto = new URL(percorso, document.baseURI).href;
+    document.body.style.setProperty('--sfondo-immagine', 'url("' + assoluto + '")');
   }
 
   /* ---------- Voce e suoni ---------- */
@@ -227,6 +240,7 @@
     zittisci();
     contenuto.innerHTML = '';
     contenuto.style.removeProperty('--colore-attivita');
+    impostaSfondo(SFONDO_MENU);
     titolo.textContent = nuovoTitolo;
     bottoneMenu.hidden = !mostraBottoneMenu;
     window.scrollTo(0, 0);
@@ -258,6 +272,7 @@
     pulisci(a.titolo, true);
     attivitaCorrente = a;
     if (a.colore) contenuto.style.setProperty('--colore-attivita', a.colore);
+    if (a.sfondo) impostaSfondo(a.sfondo);
     var area = el('div', { classe: 'area-attivita' });
     contenuto.appendChild(area);
     a.avvia(area, impostazioni[a.id], {
@@ -277,6 +292,7 @@
     var ancora = el('button', { type: 'button', classe: 'bottone', testo: 'Ancora', onclick: function () { avviaAttivita(a); } });
     attivitaCorrente = a;
     if (a.colore) contenuto.style.setProperty('--colore-attivita', a.colore);
+    if (a.sfondo) impostaSfondo(a.sfondo);
     contenuto.appendChild(el('div', { classe: 'fine' }, [
       mascotte('mascotte-grande'),
       el('p', { classe: 'fine-grande', testo: 'Finito!' }),
