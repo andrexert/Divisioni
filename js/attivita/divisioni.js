@@ -1,86 +1,22 @@
 /*
- * Attività: Divisioni.
+ * Attività 4: Divisioni.
  *
  * Due modalità:
  *  - "Distribuisci": il ragazzo distribuisce il cibo agli animali (o i pallini nelle
  *    scatole), uno alla volta, e poi dice quanti ne ha ciascuno (ed eventualmente
- *    quanti avanzano).
- *    È la divisione come "ripartizione in parti uguali", la più concreta.
- *  - "Calcola": l'operazione scritta (es. 12 : 3 = ?) con risposta a bottoni
- *    e un disegno di aiuto che compare su richiesta o dopo due tentativi.
+ *    quanti avanzano). È la divisione come "ripartizione in parti uguali", la più concreta.
+ *  - "Calcola": l'operazione scritta (es. 12 : 3 = ?) con un disegno di aiuto che
+ *    compare su richiesta o dopo due tentativi.
  */
 (function () {
   'use strict';
 
-  var MAX_PALLINI_DA_DISTRIBUIRE = 40; // oltre diventa faticoso e poco leggibile
-
-  function opzioniNumeriche(valori) {
-    return valori.map(function (n) { return { valore: n, testo: String(n) }; });
-  }
-
-  function casuale(min, max) {
-    return min + Math.floor(Math.random() * (max - min + 1));
-  }
-
-  /*
-   * Temi: chi riceve (animale) e che cosa si divide (cibo).
-   * I campi grammaticali servono a comporre frasi corrette:
-   * "uno scoiattolo", "agli scoiattoli", "le carote", "Quante carote...".
-   */
-  var TEMI = {
-    gatti: {
-      animale: 'gattino', animali: 'gattini', un: 'un', ai: 'ai', tutti: 'tutti i',
-      cibo: 'pesce', cibi: 'pesci', unCibo: 'un', iCibi: 'i', femminile: false
-    },
-    cani: {
-      animale: 'cagnolino', animali: 'cagnolini', un: 'un', ai: 'ai', tutti: 'tutti i',
-      cibo: 'osso', cibi: 'ossi', unCibo: 'un', iCibi: 'gli', femminile: false
-    },
-    conigli: {
-      animale: 'coniglietto', animali: 'coniglietti', un: 'un', ai: 'ai', tutti: 'tutti i',
-      cibo: 'carota', cibi: 'carote', unCibo: 'una', iCibi: 'le', femminile: true
-    },
-    scoiattoli: {
-      animale: 'scoiattolo', animali: 'scoiattoli', un: 'uno', ai: 'agli', tutti: 'tutti gli',
-      cibo: 'ghianda', cibi: 'ghiande', unCibo: 'una', iCibi: 'le', femminile: true
-    },
-    pallini: {
-      animale: 'scatola', animali: 'scatole', un: 'una', ai: 'alle', tutti: 'tutte le',
-      cibo: 'pallino', cibi: 'pallini', unCibo: 'un', iCibi: 'i', femminile: false, senzaImmagini: true
-    }
-  };
-  var TEMI_ANIMALI = ['gatti', 'cani', 'conigli', 'scoiattoli'];
-
-  function maiuscola(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
-
-  // Tutte le frasi dell'attività, composte in base al tema
-  function frasi(t) {
-    var quanti = t.femminile ? 'Quante ' : 'Quanti ';
-    var rimasti = t.femminile ? 'rimaste' : 'rimasti';
-    return {
-      // Due frasi distinte: prima che cosa fare, poi come farlo
-      consegna: function (n, d) {
-        return t.senzaImmagini
-          ? ['Dividi ' + n + ' pallini in ' + d + ' scatole.', 'Tocca una scatola per metterci un pallino.']
-          : ['Dividi ' + n + ' ' + t.cibi + ' tra ' + d + ' ' + t.animali + '.',
-            'Tocca ' + t.un + ' ' + t.animale + ' per dargli ' + t.unCibo + ' ' + t.cibo + '.'];
-      },
-      prima: t.senzaImmagini
-        ? 'Prima metti un pallino nelle scatole che ne hanno di meno.'
-        : 'Prima dai ' + t.unCibo + ' ' + t.cibo + ' ' + t.ai + ' ' + t.animali + ' che ne hanno di meno.',
-      finitoResto: 'Hai finito di distribuire. ' + maiuscola(t.iCibi) + ' ' + t.cibi + ' ' + rimasti +
-        ' non bastano per ' + t.tutti + ' ' + t.animali + ': sono il resto.',
-      quantiOgnuno: t.senzaImmagini
-        ? 'Quanti pallini ci sono in ogni scatola?'
-        : quanti + t.cibi + ' ha ogni ' + t.animale + '?',
-      quantiAvanzati: quanti + t.cibi + ' sono ' + (t.femminile ? 'avanzate' : 'avanzati') + '?',
-      contaOgnuno: 'Conta ' + t.iCibi + ' ' + t.cibi + ' di ' + t.un + ' ' + t.animale + '.',
-      contaAvanzati: 'Conta ' + t.iCibi + ' ' + t.cibi + ' ' + rimasti + ' fuori.'
-    };
-  }
+  var C = Impariamo.comune;
+  var MAX_OGGETTI = 40; // oltre diventa faticoso e poco leggibile
 
   Impariamo.registra({
     id: 'divisioni',
+    passo: 4,
     titolo: 'Divisioni',
     icona: ':',
     immagine: 'img/volpe.png',
@@ -96,235 +32,83 @@
           { valore: 'alterna', testo: 'Alterna' }
         ]
       },
-      {
-        chiave: 'tema', etichetta: 'Che cosa si divide', predefinito: 'animali',
-        opzioni: [
-          { valore: 'animali', testo: 'Animali (cambiano a ogni sessione)' },
-          { valore: 'gatti', testo: 'Gattini e pesci' },
-          { valore: 'cani', testo: 'Cagnolini e ossi' },
-          { valore: 'conigli', testo: 'Coniglietti e carote' },
-          { valore: 'scoiattoli', testo: 'Scoiattoli e ghiande' },
-          { valore: 'pallini', testo: 'Pallini e scatole' }
-        ]
-      },
-      { chiave: 'divisoreMax', etichetta: 'Dividere al massimo per', predefinito: 3, opzioni: opzioniNumeriche([2, 3, 5, 10]) },
-      { chiave: 'quozienteMax', etichetta: 'Risultato al massimo', predefinito: 5, opzioni: opzioniNumeriche([3, 5, 10]) },
+      C.impostazioneTema('Che cosa si divide'),
+      { chiave: 'divisoreMax', etichetta: 'Dividere al massimo per', predefinito: 3, opzioni: C.opzioniNumeriche([2, 3, 5, 10]) },
+      { chiave: 'quozienteMax', etichetta: 'Risultato al massimo', predefinito: 5, opzioni: C.opzioniNumeriche([3, 5, 10]) },
       { chiave: 'conResto', etichetta: 'Divisioni con il resto', predefinito: false, opzioni: Impariamo.SI_NO },
-      { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 5, opzioni: opzioniNumeriche([3, 5, 10]) },
-      {
-        chiave: 'aiuto', etichetta: 'Disegno di aiuto in "Calcola"', predefinito: 'richiesta',
-        opzioni: [
-          { valore: 'sempre', testo: 'Sempre' },
-          { valore: 'richiesta', testo: 'Su richiesta' },
-          { valore: 'mai', testo: 'Mai' }
-        ]
-      }
+      C.impostazioneEsercizi(),
+      C.impostazioneAiuto('Disegno di aiuto in "Calcola"')
     ],
     avvia: avvia
   });
 
   function avvia(area, opz, api) {
-    var el = api.el;
-    var indice = 0;
-    var alPrimoTentativo = 0;
-    var ultimaOperazione = '';
+    var k = Impariamo.kit(area, opz, api);
+    var el = k.el, t = k.tema, g = k.g, scena = k.scena;
 
-    var barra = api.avanzamento(opz.numeroEsercizi);
-    var scena = el('div', { classe: 'scena' });
-    area.appendChild(barra.nodo);
-    area.appendChild(scena);
+    // Frasi che dipendono dal tema
+    var testi = {
+      consegna: function (n, d) {
+        return t.senzaImmagini
+          ? ['Dividi ' + n + ' pallini in ' + d + ' scatole.', 'Tocca una scatola per metterci un pallino.']
+          : ['Dividi ' + n + ' ' + t.cibi + ' tra ' + d + ' ' + t.animali + '.',
+            'Tocca ' + t.un + ' ' + t.animale + ' per dargli ' + t.unCibo + ' ' + t.cibo + '.'];
+      },
+      prima: t.senzaImmagini
+        ? 'Prima metti un pallino nelle scatole che ne hanno di meno.'
+        : 'Prima dai ' + t.unCibo + ' ' + t.cibo + ' ' + t.ai + ' ' + t.animali + ' che ne hanno di meno.',
+      finitoResto: 'Hai finito di distribuire. ' + k.maiuscola(t.iCibi) + ' ' + t.cibi + ' ' + g.p('rimast') +
+        ' non bastano per ' + t.tutti + ' ' + t.animali + ': sono il resto.',
+      quantiOgnuno: t.senzaImmagini ? 'Quanti pallini ci sono in ogni scatola?' : g.Quanti + ' ha ogni ' + t.animale + '?',
+      quantiAvanzati: g.Quanti + ' sono ' + g.p('avanzat') + '?',
+      contaOgnuno: 'Conta ' + t.iCibi + ' ' + t.cibi + ' di ' + t.un + ' ' + t.animale + '.',
+      contaAvanzati: 'Conta ' + t.iCibi + ' ' + t.cibi + ' ' + g.p('rimast') + ' fuori.'
+    };
 
-    // Il tema resta lo stesso per tutta la sessione: niente cambi a sorpresa
-    var nomeTema = opz.tema === 'animali' ? TEMI_ANIMALI[casuale(0, TEMI_ANIMALI.length - 1)] : opz.tema;
-    var tema = TEMI[nomeTema];
-    var testi = frasi(tema);
-
-    // Tastiera fisica: le cifre premono i tasti numerici sullo schermo.
-    // Se tra le risposte c'è il 10, dopo "1" si aspetta un attimo un eventuale "0".
-    var cifreDigitate = '';
-    var attesaCifra = null;
-    api.tastiera(function (tasto) {
-      if (!/^[0-9]$/.test(tasto)) return false;
-      var tastierini = scena.querySelectorAll('.tastierino');
-      var attivo = tastierini[tastierini.length - 1];
-      if (!attivo) return false;
-      var disponibili = Array.prototype.filter.call(attivo.querySelectorAll('.tasto'), function (b) { return !b.disabled; });
-      if (!disponibili.length) return false;
-      clearTimeout(attesaCifra);
-      cifreDigitate += tasto;
-      var esatto = null;
-      var piuLunghi = false;
-      disponibili.forEach(function (b) {
-        if (b.textContent === cifreDigitate) esatto = b;
-        else if (b.textContent.indexOf(cifreDigitate) === 0) piuLunghi = true;
-      });
-      if (esatto && !piuLunghi) {
-        cifreDigitate = '';
-        esatto.click();
-      } else if (piuLunghi) {
-        attesaCifra = setTimeout(function () {
-          cifreDigitate = '';
-          if (esatto && !esatto.disabled) esatto.click();
-        }, 800);
-      } else {
-        cifreDigitate = '';
-      }
-      return true;
-    });
-
-    /* ---------- Elementi comuni ---------- */
-
-    // Un oggetto da distribuire: un pallino o il cibo del tema
-    function pallino() {
-      if (tema.senzaImmagini) return el('span', { classe: 'pallino', 'aria-hidden': 'true' });
-      return el('img', { classe: 'cibo', src: 'img/' + tema.cibo + '.png', alt: '', draggable: 'false' });
-    }
-
-    // Il contenuto di una "scatola": con gli animali, l'animale sopra la sua ciotola
-    function contenutoScatola(quanti, divisore) {
-      var dentro = el('span', { classe: 'scatola-pallini' });
-      if (tema.senzaImmagini) return [dentro];
-      return [
-        el('img', {
-          classe: 'animale' + (divisore > 5 ? ' piccolo' : ''),
-          src: 'img/' + tema.animale + '.png', alt: '', draggable: 'false'
-        }),
-        dentro
-      ];
-    }
-
-    // Bottoni con i numeri: un errore spegne solo quel numero, senza segni rossi
-    function tastierino(da, a, corretto, alGiusto, alSbagliato) {
-      var griglia = el('div', { classe: 'tastierino' });
-      for (var n = da; n <= a; n++) {
-        (function (numero) {
-          var tasto = el('button', {
-            type: 'button', classe: 'tasto', testo: String(numero),
-            onclick: function () {
-              if (numero === corretto) {
-                Array.prototype.forEach.call(griglia.children, function (t) { t.disabled = true; });
-                tasto.classList.add('giusto');
-                api.suono('giusto');
-                alGiusto();
-              } else {
-                tasto.disabled = true;
-                tasto.classList.add('provato');
-                api.suono('riprova');
-                alSbagliato();
-              }
-            }
-          });
-          griglia.appendChild(tasto);
-        })(n);
-      }
-      return griglia;
-    }
-
-    function domanda(testo, tastiera) {
-      return el('div', { classe: 'domanda' }, [el('p', { classe: 'domanda-testo', testo: testo }), tastiera]);
-    }
-
-    // Disegno statico: le scatole già riempite e gli eventuali pallini avanzati
+    // Disegno di aiuto: le ciotole già riempite e gli eventuali avanzi
     function figura(es) {
       var contenitore = el('div', { classe: 'figura' });
-      var scatole = el('div', { classe: 'scatole' });
+      var ciotole = el('div', { classe: 'scatole' });
       for (var i = 0; i < es.divisore; i++) {
-        var parti = contenutoScatola(es.quoziente, es.divisore);
-        var dentro = parti[parti.length - 1];
-        for (var j = 0; j < es.quoziente; j++) dentro.appendChild(pallino());
-        scatole.appendChild(el('div', { classe: 'scatola statica' + (tema.senzaImmagini ? '' : ' con-animale') }, parti));
+        var c = k.ciotola({ quanti: es.divisore });
+        for (var j = 0; j < es.quoziente; j++) c.dentro.appendChild(k.oggetto());
+        ciotole.appendChild(c.nodo);
       }
-      contenitore.appendChild(scatole);
-      if (es.resto > 0) {
-        var avanzo = el('div', { classe: 'mucchio avanzo' });
-        for (var k = 0; k < es.resto; k++) avanzo.appendChild(pallino());
-        contenitore.appendChild(el('div', { classe: 'etichetta-avanzo' }, ['Avanzano:', avanzo]));
-      }
+      contenitore.appendChild(ciotole);
+      if (es.resto > 0) contenitore.appendChild(el('div', { classe: 'etichetta-avanzo' }, ['Avanzano:', k.mucchio(es.resto, 'avanzo')]));
       return contenitore;
     }
 
-    /* ---------- Generazione degli esercizi ---------- */
-
-    function genera(modo) {
-      var es, chiave, tentativi = 0;
-      do {
-        var d = casuale(2, opz.divisoreMax);
-        var q = casuale(1, opz.quozienteMax);
-        var r = opz.conResto ? casuale(0, d - 1) : 0;
-        if (modo === 'distribuisci' && d * q + r > MAX_PALLINI_DA_DISTRIBUIRE) {
-          q = Math.max(1, Math.floor((MAX_PALLINI_DA_DISTRIBUIRE - r) / d));
-        }
-        es = { divisore: d, quoziente: q, resto: r, dividendo: d * q + r };
-        chiave = es.dividendo + ':' + d;
-        tentativi++;
-      } while (chiave === ultimaOperazione && tentativi < 20); // evita due esercizi uguali di fila
-      ultimaOperazione = chiave;
-      return es;
-    }
-
-    /* ---------- Flusso ---------- */
-
-    function prossimo() {
-      if (indice >= opz.numeroEsercizi) {
-        api.fine({ totale: opz.numeroEsercizi, alPrimoTentativo: alPrimoTentativo });
-        return;
-      }
-      var modo = opz.modalita === 'alterna' ? (indice % 2 === 0 ? 'distribuisci' : 'calcola') : opz.modalita;
-      var es = genera(modo);
-      barra.aggiorna(indice);
-      scena.innerHTML = '';
-      var concludi = function (errori) { conclusione(es, errori); };
-      if (modo === 'calcola') calcola(es, concludi);
-      else distribuisci(es, concludi);
-    }
-
-    function conclusione(es, errori) {
-      if (errori === 0) alPrimoTentativo++;
-      indice++;
-      var scritta = es.dividendo + ' : ' + es.divisore + ' = ' + es.quoziente + (es.resto ? ' resto ' + es.resto : '');
-      api.esito(scena, scritta, indice >= opz.numeroEsercizi, prossimo);
-    }
-
-    /* ---------- Modalità "Distribuisci" ---------- */
+    /* ---------- "Distribuisci" ---------- */
 
     function distribuisci(es, finito) {
       var errori = 0;
-      var rimasti = es.dividendo;
-      var conteggi = [];
-      var scatole = [];
-      var bloccato = false;
+      var rimasti, conteggi, ciotole, bloccato;
 
       scena.appendChild(api.consegna(testi.consegna(es.dividendo, es.divisore)));
-
       var mucchio = el('div', { classe: 'mucchio' });
-      var zonaScatole = el('div', { classe: 'scatole' });
+      var zonaCiotole = el('div', { classe: 'scatole' });
       var avviso = api.messaggio();
       var ricomincia = el('button', { type: 'button', classe: 'bottone secondario piccolo', testo: 'Ricomincia', onclick: prepara });
       var zonaDomande = el('div');
-
-      scena.appendChild(mucchio);
-      scena.appendChild(zonaScatole);
-      scena.appendChild(avviso);
-      scena.appendChild(el('div', { classe: 'riga-bottoni' }, [ricomincia]));
-      scena.appendChild(zonaDomande);
+      [mucchio, zonaCiotole, avviso, el('div', { classe: 'riga-bottoni' }, [ricomincia]), zonaDomande]
+        .forEach(function (n) { scena.appendChild(n); });
 
       function prepara() {
         rimasti = es.dividendo;
         conteggi = [];
-        scatole = [];
+        ciotole = [];
+        bloccato = false;
         mucchio.innerHTML = '';
-        zonaScatole.innerHTML = '';
+        zonaCiotole.innerHTML = '';
         avviso.dici('');
-        for (var i = 0; i < es.dividendo; i++) mucchio.appendChild(pallino());
+        for (var i = 0; i < es.dividendo; i++) mucchio.appendChild(k.oggetto());
         for (var s = 0; s < es.divisore; s++) {
           (function (n) {
-            var scatola = el('button', {
-              type: 'button', classe: 'scatola' + (tema.senzaImmagini ? '' : ' con-animale'),
-              onclick: function () { metti(n); }
-            }, contenutoScatola(0, es.divisore));
+            var c = k.ciotola({ quanti: es.divisore, tocca: function () { metti(n); } });
             conteggi.push(0);
-            scatole.push(scatola);
-            zonaScatole.appendChild(scatola);
+            ciotole.push(c);
+            zonaCiotole.appendChild(c.nodo);
           })(s);
         }
         aggiornaEtichette();
@@ -337,29 +121,28 @@
       function aggiornaEtichette() {
         var minimo = Math.min.apply(null, conteggi);
         var uguali = tutteUguali();
-        mucchio.setAttribute('aria-label', maiuscola(tema.cibi) + ' da distribuire: ' + rimasti);
-        scatole.forEach(function (s, i) {
-          s.setAttribute('aria-label', maiuscola(tema.animale) + ' ' + (i + 1) + ', ' + conteggi[i] + ' ' + tema.cibi);
-          // Guida discreta: evidenzia le scatole che aspettano ancora un pallino
-          s.classList.toggle('suggerita', !bloccato && !uguali && conteggi[i] === minimo);
+        mucchio.setAttribute('aria-label', k.maiuscola(t.cibi) + ' da distribuire: ' + rimasti);
+        ciotole.forEach(function (c, i) {
+          c.nodo.setAttribute('aria-label', k.maiuscola(t.animale) + ' ' + (i + 1) + ', ' + g.quanti(conteggi[i]));
+          // Guida discreta: evidenzia le ciotole che aspettano ancora un pezzo
+          c.nodo.classList.toggle('suggerita', !bloccato && !uguali && conteggi[i] === minimo);
         });
       }
 
       function metti(i) {
         if (bloccato) return;
-        var minimo = Math.min.apply(null, conteggi);
-        if (conteggi[i] > minimo) {
+        if (conteggi[i] > Math.min.apply(null, conteggi)) {
           avviso.dici(testi.prima);
           return;
         }
         rimasti--;
         conteggi[i]++;
         mucchio.removeChild(mucchio.lastChild);
-        scatole[i].lastChild.appendChild(pallino());
+        ciotole[i].dentro.appendChild(k.oggetto());
         avviso.dici('');
         if (tutteUguali() && rimasti < es.divisore) {
           bloccato = true;
-          scatole.forEach(function (s) { s.disabled = true; });
+          ciotole.forEach(function (c) { c.nodo.disabled = true; });
           aggiornaEtichette();
           faiDomande();
         } else {
@@ -376,20 +159,19 @@
           mucchio.hidden = true; // vuoto: non serve più e distrarrebbe
           avviso.dici('Hai finito di distribuire!');
         }
-        var primaDomanda = domanda(testi.quantiOgnuno, tastierino(
+        zonaDomande.appendChild(k.domanda(testi.quantiOgnuno, k.risposta(
           0, opz.quozienteMax, es.quoziente,
           function () {
             if (es.resto > 0) chiediResto();
             else finito(errori);
           },
           function () { errori++; avviso.dici('Non ancora. ' + testi.contaOgnuno); }
-        ));
-        zonaDomande.appendChild(primaDomanda);
+        )));
       }
 
       function chiediResto() {
         avviso.dici('');
-        zonaDomande.appendChild(domanda(testi.quantiAvanzati, tastierino(
+        zonaDomande.appendChild(k.domanda(testi.quantiAvanzati, k.risposta(
           0, es.divisore - 1, es.resto,
           function () { finito(errori); },
           function () { errori++; avviso.dici('Non ancora. ' + testi.contaAvanzati); }
@@ -399,53 +181,29 @@
       prepara();
     }
 
-    /* ---------- Modalità "Calcola" ---------- */
+    /* ---------- "Calcola" ---------- */
 
     function calcola(es, finito) {
       var errori = 0;
-      var disegnoMostrato = false;
-
       scena.appendChild(api.consegna('Quanto fa ' + es.dividendo + ' diviso ' + es.divisore + '?'));
-
-      var casellaQuoziente = el('span', { classe: 'casella', testo: '?' });
-      var operazione = el('p', { classe: 'operazione' }, [es.dividendo + ' : ' + es.divisore + ' = ', casellaQuoziente]);
-      var disegno = el('div');
-      var avviso = api.messaggio();
-      var bottoneAiuto = opz.aiuto === 'richiesta'
-        ? el('button', { type: 'button', classe: 'bottone secondario piccolo', testo: 'Mostrami il disegno', onclick: mostraDisegno })
-        : null;
+      var casella = el('span', { classe: 'casella', testo: '?' });
+      var operazione = el('p', { classe: 'operazione' }, [es.dividendo + ' : ' + es.divisore + ' = ', casella]);
+      var aiuto = k.aiuto('Mostrami il disegno', function () { return figura(es); });
       var zonaDomande = el('div');
-
-      scena.appendChild(operazione);
-      if (bottoneAiuto) scena.appendChild(el('div', { classe: 'riga-bottoni' }, [bottoneAiuto]));
-      scena.appendChild(disegno);
-      scena.appendChild(zonaDomande);
-      scena.appendChild(avviso);
-
-      function mostraDisegno() {
-        if (disegnoMostrato) return;
-        disegnoMostrato = true;
-        disegno.appendChild(figura(es));
-        if (bottoneAiuto) bottoneAiuto.hidden = true;
-      }
+      var avviso = api.messaggio();
+      [operazione, aiuto.nodo, zonaDomande, avviso].forEach(function (n) { scena.appendChild(n); });
 
       function sbagliato(testo) {
         errori++;
-        if (errori >= 2 && opz.aiuto !== 'mai' && !disegnoMostrato) {
-          mostraDisegno();
-          avviso.dici('Non ancora. Guarda il disegno. ' + testi.contaOgnuno);
-        } else {
-          avviso.dici(testo);
-        }
+        if (errori >= 2 && aiuto.mostra()) avviso.dici('Non ancora. Guarda il disegno. ' + testi.contaOgnuno);
+        else avviso.dici(testo);
       }
 
-      if (opz.aiuto === 'sempre') mostraDisegno();
-
-      zonaDomande.appendChild(tastierino(
+      zonaDomande.appendChild(k.risposta(
         0, opz.quozienteMax, es.quoziente,
         function () {
-          casellaQuoziente.textContent = String(es.quoziente);
-          casellaQuoziente.classList.add('compilata');
+          casella.textContent = String(es.quoziente);
+          casella.classList.add('compilata');
           avviso.dici('');
           if (es.resto > 0) chiediResto();
           else finito(errori);
@@ -458,7 +216,7 @@
         operazione.appendChild(document.createTextNode(' resto '));
         operazione.appendChild(casellaResto);
         zonaDomande.innerHTML = '';
-        zonaDomande.appendChild(domanda('Quanto è il resto?', tastierino(
+        zonaDomande.appendChild(k.domanda('Quanto è il resto?', k.risposta(
           0, es.divisore - 1, es.resto,
           function () {
             casellaResto.textContent = String(es.resto);
@@ -466,13 +224,25 @@
             avviso.dici('');
             finito(errori);
           },
-          function () {
-            sbagliato('Non ancora. Il resto è quello che avanza: è sempre più piccolo di ' + es.divisore + '.');
-          }
+          function () { sbagliato('Non ancora. Il resto è quello che avanza: è sempre più piccolo di ' + es.divisore + '.'); }
         )));
       }
     }
 
-    prossimo();
+    k.sessione({
+      modi: ['distribuisci', 'calcola'],
+      genera: function (modo) {
+        var d = k.casuale(2, opz.divisoreMax);
+        var q = k.casuale(1, opz.quozienteMax);
+        var r = opz.conResto ? k.casuale(0, d - 1) : 0;
+        if (modo === 'distribuisci' && d * q + r > MAX_OGGETTI) q = Math.max(1, Math.floor((MAX_OGGETTI - r) / d));
+        return { divisore: d, quoziente: q, resto: r, dividendo: d * q + r };
+      },
+      chiave: function (es) { return es.dividendo + ':' + es.divisore; },
+      esegui: { distribuisci: distribuisci, calcola: calcola },
+      scritta: function (es) {
+        return es.dividendo + ' : ' + es.divisore + ' = ' + es.quoziente + (es.resto ? ' resto ' + es.resto : '');
+      }
+    });
   }
 })();

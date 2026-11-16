@@ -36,6 +36,7 @@
 
   Impariamo.registra({
     id: 'colonna',
+    passo: 5,
     titolo: 'Divisioni in colonna',
     icona: '÷',
     immagine: 'img/gufo.png',

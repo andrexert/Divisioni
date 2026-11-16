@@ -680,3 +680,69 @@ img.animale, img.cibo, img.mascotte, img.mascotte-grande, img.scheda-immagine {
 .senza-gap .riga-bottoni > *, .senza-gap .scatole > *, .senza-gap .tastierino > *,
 .senza-gap .colonna-area > * { margin: 0.4rem; }
 .senza-gap .mucchio > * { margin: 0.2rem; }
+
+/* ---------- 13. Percorso delle operazioni ---------- */
+
+/* Numero della tappa sulle schede del menu: 1 addizioni ... 5 divisioni in colonna */
+.scheda-attivita { position: relative; }
+.scheda-passo {
+  position: absolute;
+  top: 0.5rem; left: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem; height: 2rem;
+  border-radius: 50%;
+  background: var(--colore-attivita, var(--accento));
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* Pezzi di cibo da toccare (addizioni: da mettere; sottrazioni: da togliere) */
+.pezzo {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  line-height: 0;
+  border-radius: 8px;
+}
+.pezzo:disabled { cursor: default; }
+.mucchio-tocca .pezzo { outline: 2px dashed var(--accento); outline-offset: 2px; }
+/* Il cibo mangiato o tolto resta al suo posto, trasparente: si vede quanto c'era e quanto resta */
+.cibo.tolto, .pallino.tolto, .pezzo.tolto > * { opacity: 0.2; filter: grayscale(1); }
+
+/* Disegno di aiuto con due gruppi: [gruppo] + [gruppo] */
+.figura-operazione { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.6rem; }
+.figura-operazione .mucchio { margin: 0; max-width: 300px; }
+.segno-figura { font-size: 2.2rem; font-weight: 700; }
+
+/* Riga di collegamento nel riquadro "Esatto!": 3 + 3 + 3 + 3 = 12 sopra 3 × 4 = 12 */
+.operazione-ponte {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  font-size: 1.3rem;
+  color: var(--testo-tenue);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fila dei salti per le tabelline: 3 · 6 · 9 · 12 ... */
+.salti { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+.salto {
+  min-width: 2.6rem;
+  padding: 0.2rem 0.5rem;
+  border: 2px solid var(--bordo);
+  border-radius: 10px;
+  background: var(--superficie);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Risposta con il tastierino (risultati oltre il 10) */
+.risposta-tastierino { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; margin: 0.8rem auto; }
+.casella-risposta { min-width: 4.5rem; padding: 0.1rem 0.5rem; font-size: 2rem; font-weight: 700; text-align: center; }
+
+.senza-gap .figura-operazione > *, .senza-gap .salti > * { margin: 0.25rem; }
+.senza-gap .risposta-tastierino > * { margin: 0.4rem; }

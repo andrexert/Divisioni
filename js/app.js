@@ -261,8 +261,11 @@
     };
   }
 
-  // Riquadro verde di fine esercizio, sempre uguale: "Esatto!", l'operazione, "Avanti"
+  // Riquadro verde di fine esercizio, sempre uguale: "Esatto!", l'operazione, "Avanti".
+  // "scritta" può essere un testo o due righe: [riga di collegamento, operazione],
+  // per esempio ['3 + 3 + 3 + 3 = 12', '3 × 4 = 12'].
   function esito(contenitore, scritta, ultimo, alAvanti) {
+    var righe = typeof scritta === 'string' ? [scritta] : scritta;
     var avanti = el('button', {
       type: 'button', classe: 'bottone',
       testo: ultimo ? 'Fine' : 'Avanti \u2192',
@@ -272,14 +275,14 @@
       el('div', { classe: 'esito-testa' }, [
         mascotte('mascotte'),
         el('p', { classe: 'esito-lode', testo: 'Esatto!' })
-      ]),
-      el('p', { classe: 'operazione', testo: scritta }),
-      avanti
-    ]);
+      ])
+    ].concat(righe.map(function (r, i) {
+      return el('p', { classe: i === righe.length - 1 ? 'operazione' : 'operazione-ponte', testo: r });
+    })).concat([avanti]));
     contenitore.appendChild(riquadro);
     if (riquadro.scrollIntoView) riquadro.scrollIntoView({ block: 'nearest' });
     avanti.focus();
-    parla('Esatto! ' + scritta);
+    parla('Esatto! ' + righe.join('. '));
   }
 
   /* ---------- Tastiera fisica ---------- */
@@ -328,6 +331,7 @@
         style: a.colore ? '--colore-attivita: ' + a.colore : null,
         onclick: function () { avviaAttivita(a); }
       }, [
+        a.passo ? el('span', { classe: 'scheda-passo', 'aria-hidden': 'true', testo: String(a.passo) }) : null,
         icona,
         el('span', { classe: 'scheda-titolo', testo: a.titolo }),
         el('span', { classe: 'scheda-descrizione', testo: a.descrizione })

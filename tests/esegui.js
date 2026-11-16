@@ -4,9 +4,9 @@
  *   node tests/esegui.js
  *
  * Un "alunno automatico" usa l'app su più dispositivi simulati: computer con
- * Chrome e con Safari (WebKit), iPhone, iPad e telefono Android. Gioca tutti i temi
- * delle divisioni con gli oggetti e le divisioni in colonna con impostazioni
- * diverse, sbaglia apposta per provare i suggerimenti, usa anche solo la tastiera,
+ * Chrome e con Safari (WebKit), iPhone, iPad e telefono Android. Fa addizioni,
+ * sottrazioni, moltiplicazioni, divisioni (tutti i temi) e divisioni in colonna
+ * con impostazioni diverse, sbaglia apposta per provare i suggerimenti, usa anche solo la tastiera,
  * e controlla che la pagina non esca mai dai bordi dello schermo.
  *
  * Richiede Playwright (npm install playwright). Se un browser non è installato,
@@ -66,66 +66,195 @@ async function controllaBordi(pagina, momento) {
 
 const consegna = (p) => p.locator('.consegna').first().textContent().then(t => t.replace(/\s+/g, ' ').trim());
 
+/* ---------- Risposte ---------- */
+
+// Scrive un numero nella risposta aperta: fila di tasti o tastierino (risultati oltre il 10),
+// con la tastiera fisica se il profilo ce l'ha. Restituisce true se è stato accettato.
+async function scrivi(p, valore, profilo) {
+  const h = await p.locator('.risposta:not(.conclusa)').last().elementHandle();
+  const tastierino = await h.evaluate(n => n.classList.contains('risposta-tastierino'));
+  const tocca = (b) => profilo.contesto.hasTouch ? b.tap() : b.click();
+  if (profilo.tastiera) {
+    for (const c of String(valore)) await p.keyboard.press(c);
+    if (tastierino) await p.keyboard.press('Enter');
+    else await p.waitForTimeout(900); // dopo "1" l'app aspetta un attimo un eventuale "0" (per il 10)
+  } else if (tastierino) {
+    for (const c of String(valore)) await tocca(await tastoConTesto(h, c));
+    await tocca(await h.$('.tasto-ok'));
+  } else {
+    await tocca(await tastoConTesto(h, String(valore)));
+  }
+  return h.evaluate(n => n.classList.contains('conclusa'));
+}
+
+async function tastoConTesto(h, testo) {
+  for (const b of await h.$$('.tasto')) if ((await b.textContent()) === testo) return b;
+  throw new Error('tasto ' + testo + ' non trovato');
+}
+
+// Dà una risposta sbagliata (vicina a quella giusta, tra i tasti ancora disponibili)
+async function sbaglia(p, giusto, profilo) {
+  const h = await p.locator('.risposta:not(.conclusa)').last().elementHandle();
+  const disponibili = await h.evaluate(n => n.classList.contains('risposta-tastierino') ? null :
+    Array.prototype.filter.call(n.querySelectorAll('.tasto'), b => !b.disabled).map(b => Number(b.textContent)));
+  const sbagliato = [giusto + 1, giusto - 1, giusto + 2].find(v => v >= 0 && v !== giusto && (!disponibili || disponibili.includes(v)));
+  verifica(!(await scrivi(p, sbagliato, profilo)), 'la risposta sbagliata ' + sbagliato + ' è stata accettata');
+}
+
+async function rispondi(p, valore, profilo, cosa) {
+  verifica(await scrivi(p, valore, profilo), cosa + ': risposta giusta ' + valore + ' non accettata');
+}
+
+async function righeDa5(p, cosa) {
+  const colonne = await p.evaluate(() => getComputedStyle(document.querySelector('.scatola-pallini')).gridTemplateColumns.split(' ').length);
+  verifica(colonne === 5, cosa + ': il contenuto delle ciotole non è in righe da 5 (' + colonne + ')');
+}
+
+async function fineSessione(p, cosa) {
+  verifica(await p.locator('.fine').count() === 1, cosa + ': la sessione non arriva a "Finito!"');
+  verifica(!(await p.textContent('.fine')).includes('primo tentativo'), cosa + ': il resoconto per il docente è visibile al ragazzo');
+  await controllaBordi(p, cosa + ', fine');
+  await chiudi(p, cosa);
+}
+
+/* ---------- Addizioni ---------- */
+
+async function addizioni(browser, profilo, tema, sommaMax) {
+  const cosa = 'Addizioni ' + tema + ' fino a ' + sommaMax;
+  const p = await apri(browser, profilo, { addizioni: { tema, sommaMax, modalita: 'alterna', numeroEsercizi: 3, aiuto: 'richiesta' } });
+  await p.premi('.scheda-attivita >> nth=0');
+  for (let es = 0; es < 3; es++) {
+    if (await p.locator('.mucchio-tocca').count()) {
+      while (await p.locator('.mucchio-tocca .pezzo').count()) await p.premi('.mucchio-tocca .pezzo');
+      await righeDa5(p, cosa);
+      await controllaBordi(p, cosa);
+      const somma = await p.locator('.scatola-pallini > *').count();
+      await sbaglia(p, somma, profilo);
+      verifica((await p.textContent('.messaggio')).includes('Conta'), cosa + ': manca il suggerimento');
+      await rispondi(p, somma, profilo, cosa);
+    } else {
+      const [a, b] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
+      await sbaglia(p, a + b, profilo);
+      await sbaglia(p, a + b, profilo);
+      verifica(await p.locator('.figura').count() === 1, cosa + ': dopo due errori non compare il disegno');
+      await rispondi(p, a + b, profilo, cosa);
+    }
+    const [a, b, r] = (await p.textContent('.esito .operazione')).match(/\d+/g).map(Number);
+    verifica(a + b === r, cosa + ': esito sbagliato');
+    await p.premi('.esito button');
+  }
+  await fineSessione(p, cosa);
+}
+
+/* ---------- Sottrazioni ---------- */
+
+async function sottrazioni(browser, profilo, tema, numeroMax) {
+  const cosa = 'Sottrazioni ' + tema + ' da ' + numeroMax;
+  const p = await apri(browser, profilo, { sottrazioni: { tema, numeroMax, modalita: 'alterna', numeroEsercizi: 3, aiuto: 'richiesta' } });
+  await p.premi('.scheda-attivita >> nth=1');
+  for (let es = 0; es < 3; es++) {
+    if (await p.locator('.pezzo').count()) {
+      const a = await p.locator('.pezzo').count();
+      const b = Number((await consegna(p)).match(/tocca (\d+)/)[1]);
+      for (let i = 0; i < b; i++) await p.premi('.pezzo:not(.tolto)');
+      verifica(await p.locator('.pezzo:not([disabled])').count() === 0, cosa + ': dopo aver tolto si possono togliere altri pezzi');
+      await righeDa5(p, cosa);
+      await controllaBordi(p, cosa);
+      await sbaglia(p, a - b, profilo);
+      verifica((await p.textContent('.messaggio')).includes('Conta solo'), cosa + ': manca il suggerimento');
+      await rispondi(p, a - b, profilo, cosa);
+    } else {
+      const [a, b] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
+      await sbaglia(p, a - b, profilo);
+      await sbaglia(p, a - b, profilo);
+      verifica(await p.locator('.figura .tolto').count() === b, cosa + ': il disegno non mostra ' + b + ' oggetti tolti');
+      await rispondi(p, a - b, profilo, cosa);
+    }
+    const [a, b, r] = (await p.textContent('.esito .operazione')).match(/\d+/g).map(Number);
+    verifica(a - b === r, cosa + ': esito sbagliato');
+    await p.premi('.esito button');
+  }
+  await fineSessione(p, cosa);
+}
+
+/* ---------- Moltiplicazioni ---------- */
+
+async function moltiplicazioni(browser, profilo, tema, tabellina) {
+  const cosa = 'Moltiplicazioni ' + tema + ' tabellina ' + tabellina;
+  const p = await apri(browser, profilo, { moltiplicazioni: { tema, tabellina, modalita: 'alterna', numeroEsercizi: 3, aiuto: 'richiesta' } });
+  await p.premi('.scheda-attivita >> nth=2');
+  for (let es = 0; es < 3; es++) {
+    if (await p.locator('.scatola:not(.statica)').count()) {
+      const n = Number((await consegna(p)).match(/(?:Dai|Metti) (\d+)/)[1]);
+      const volte = await p.locator('.scatola').count();
+      for (let c = 0; c < volte; c++) for (let i = 0; i < n; i++) await p.premi('.scatola >> nth=' + c);
+      verifica(await p.locator('.scatola:not([disabled])').count() === 0, cosa + ': una ciotola piena accetta ancora cibo');
+      await righeDa5(p, cosa);
+      await controllaBordi(p, cosa);
+      await sbaglia(p, n * volte, profilo);
+      verifica((await p.textContent('.messaggio')).includes('salti'), cosa + ': manca il suggerimento');
+      await rispondi(p, n * volte, profilo, cosa);
+      const ponte = await p.textContent('.esito .operazione-ponte');
+      verifica(ponte === Array(volte).fill(n).join(' + ') + ' = ' + n * volte, cosa + ': addizione ripetuta sbagliata ' + ponte);
+    } else {
+      const [n, volte] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
+      await sbaglia(p, n * volte, profilo);
+      await sbaglia(p, n * volte, profilo);
+      verifica(await p.locator('.salti .salto').count() === 10, cosa + ': dopo due errori non compaiono i salti');
+      await rispondi(p, n * volte, profilo, cosa);
+    }
+    const [a, b, r] = (await p.textContent('.esito .operazione')).match(/\d+/g).map(Number);
+    verifica(a * b === r, cosa + ': esito sbagliato');
+    await p.premi('.esito button');
+  }
+  await fineSessione(p, cosa);
+}
+
 /* ---------- Divisioni con gli oggetti ---------- */
 
 async function divisioni(browser, profilo, tema) {
+  const cosa = 'Divisioni ' + tema;
   const p = await apri(browser, profilo, {
     divisioni: { tema, modalita: 'alterna', conResto: true, numeroEsercizi: 3, divisoreMax: 5, quozienteMax: 10 }
   });
-  await p.premi('.scheda-attivita >> nth=0');
+  await p.premi('.scheda-attivita >> nth=3');
   for (let es = 0; es < 3; es++) {
     if (await p.locator('.scatola:not(.statica)').count()) {
-      // Distribuisci: prima un tocco "sbagliato" (due volte la stessa scatola), poi a turno
+      // Distribuisci: prima un tocco "sbagliato" (due volte la stessa ciotola), poi a turno
       const d = await p.locator('.scatola').count();
       await p.premi('.scatola >> nth=0');
       await p.premi('.scatola >> nth=0');
-      verifica((await p.textContent('.messaggio')).startsWith('Prima '), tema + ': manca l\'avviso sulle scatole con meno oggetti');
+      verifica((await p.textContent('.messaggio')).startsWith('Prima '), cosa + ': manca l\'avviso sulle ciotole con meno oggetti');
       for (let k = 1; !(await p.locator('.domanda').count()); k++) await p.premi('.scatola >> nth=' + (k % d));
-      await controllaBordi(p, tema + ', dopo la distribuzione');
-      // Righe da 5 nelle ciotole
-      const colonne = await p.evaluate(() => getComputedStyle(document.querySelector('.scatola-pallini')).gridTemplateColumns.split(' ').length);
-      verifica(colonne === 5, tema + ': il contenuto delle scatole non è in righe da 5 (' + colonne + ')');
+      await controllaBordi(p, cosa + ', dopo la distribuzione');
+      await righeDa5(p, cosa);
       const q = await p.locator('.scatola-pallini >> nth=0').locator('> *').count();
       const r = await p.locator('.mucchio > *').count();
-      await rispondi(p, 0, q, profilo);
-      if (r > 0) await rispondi(p, 1, r, profilo);
+      await rispondi(p, q, profilo, cosa);
+      if (r > 0) await rispondi(p, r, profilo, cosa);
     } else {
       // Calcola: due errori fanno comparire il disegno
       const [a, d] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
       const q = Math.floor(a / d), r = a % d;
-      for (const x of [0, 1, 2, 3].filter(x => x !== q).slice(0, 2)) await p.premi(`.tastierino .tasto:text-is("${x}")`);
-      verifica(await p.locator('.figura').count() === 1, tema + ': dopo due errori non compare il disegno');
-      await p.premi(`.tastierino .tasto:text-is("${q}")`);
-      if (r) await p.premi(`.tastierino .tasto:text-is("${r}")`);
+      await sbaglia(p, q, profilo);
+      await sbaglia(p, q, profilo);
+      verifica(await p.locator('.figura').count() === 1, cosa + ': dopo due errori non compare il disegno');
+      await rispondi(p, q, profilo, cosa);
+      if (r) await rispondi(p, r, profilo, cosa);
     }
     const scritta = await p.textContent('.esito .operazione');
     const [a, d] = scritta.match(/\d+/g).map(Number);
-    verifica(scritta === `${a} : ${d} = ${Math.floor(a / d)}` + (a % d ? ` resto ${a % d}` : ''), tema + ': esito sbagliato ' + scritta);
+    verifica(scritta === `${a} : ${d} = ${Math.floor(a / d)}` + (a % d ? ` resto ${a % d}` : ''), cosa + ': esito sbagliato ' + scritta);
     await p.premi('.esito button');
   }
-  verifica(await p.locator('.fine').count() === 1, tema + ': la sessione non arriva a "Finito!"');
-  verifica(!(await p.textContent('.fine')).includes('primo tentativo'), tema + ': il resoconto per il docente è visibile al ragazzo');
-  await controllaBordi(p, tema + ', fine');
-  await chiudi(p, 'Divisioni ' + tema);
-}
-
-// Risponde alla domanda numero "quale": con la tastiera fisica, se il profilo ce l'ha
-async function rispondi(p, quale, valore, profilo) {
-  const domanda = p.locator('.domanda').nth(quale);
-  if (profilo.tastiera) {
-    for (const c of String(valore)) await p.keyboard.press(c);
-    await p.waitForTimeout(900); // dopo "1" l'app aspetta un attimo un eventuale "0" (per il 10)
-  } else {
-    await domanda.locator('.tasto').filter({ hasText: new RegExp('^' + valore + '$') }).first()[profilo.contesto.hasTouch ? 'tap' : 'click']();
-  }
-  verifica(await domanda.locator('.tasto.giusto').count() === 1, 'risposta ' + valore + ' non accettata');
+  await fineSessione(p, cosa);
 }
 
 /* ---------- Divisioni in colonna ---------- */
 
 async function colonna(browser, profilo, imp, usaTastiera) {
   const p = await apri(browser, profilo, { colonna: Object.assign({ numeroEsercizi: 2, tabellina: 'errore' }, imp) });
-  await p.premi('.scheda-attivita >> nth=1');
+  await p.premi('.scheda-attivita >> nth=4');
   const nome = 'colonna ' + JSON.stringify(imp) + (usaTastiera ? ' (tastiera)' : '');
   const scrivi = async (v) => {
     if (usaTastiera) { for (const c of String(v)) await p.keyboard.press(c); await p.keyboard.press('Enter'); }
@@ -176,7 +305,9 @@ async function colonna(browser, profilo, imp, usaTastiera) {
 async function menuEImpostazioni(browser, profilo) {
   const p = await apri(browser, profilo, {});
   await controllaBordi(p, 'menu');
-  verifica(await p.locator('.scheda-attivita').count() === 2, 'nel menu non ci sono due attività');
+  const titoli = await p.locator('.scheda-titolo').allTextContents();
+  verifica(titoli.join('|') === 'Addizioni|Sottrazioni|Moltiplicazioni|Divisioni|Divisioni in colonna',
+    'il menu non segue il percorso: ' + titoli.join(', '));
   const sfondo = await p.evaluate(() => getComputedStyle(document.body, '::before').backgroundImage);
   verifica(/sfondo-menu\.png/.test(sfondo), 'manca lo sfondo del menu');
   // Ingranaggio: un clic apre l'area docente, che chiede la parola DOCENTE
@@ -217,6 +348,12 @@ async function menuEImpostazioni(browser, profilo) {
     const prima = errori;
     console.log('\n' + profilo.nome);
     await menuEImpostazioni(browser, profilo);
+    await addizioni(browser, profilo, 'conigli', 10);
+    await addizioni(browser, profilo, 'pallini', 20);
+    await sottrazioni(browser, profilo, 'scoiattoli', 10);
+    await sottrazioni(browser, profilo, 'gatti', 20);
+    await moltiplicazioni(browser, profilo, 'cani', 'fino5');
+    await moltiplicazioni(browser, profilo, 'pallini', 7);
     for (const tema of ['gatti', 'cani', 'conigli', 'scoiattoli', 'pallini']) await divisioni(browser, profilo, tema);
     const combinazioni = [
       { cifreDividendo: 2, cifreDivisore: 1, conResto: false, sottrazioni: true },
