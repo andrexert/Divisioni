@@ -57,13 +57,33 @@ Le impostazioni si aprono dall'ingranaggio in alto a destra: si apre l'**Area do
 
 Sono disponibili:
 
-- **Generali:** lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, colori vivaci o tenui (per i ragazzi con ipersensibilità visiva), sfondi illustrati sì o no, caratteri più grandi, alto contrasto.
+- **Generali:** passaggio al livello successivo (lo decide il docente, oppure automatico), lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, colori vivaci o tenui (per i ragazzi con ipersensibilità visiva), sfondi illustrati sì o no, caratteri più grandi, alto contrasto.
 - **Addizioni** e **Sottrazioni:** tipo di esercizio (con gli oggetti, calcola, alterna), animali e cibo, numero massimo (5, 10 o 20), numero di esercizi, disegno di aiuto.
 - **Moltiplicazioni:** tipo di esercizio (gruppi uguali, tabelline, alterna), animali e cibo, quali tabelline (dal 2 al 5, dal 2 al 10 o una sola), numero di esercizi, aiuto con i salti.
 - **Divisioni:** tipo di esercizio, divisore massimo, risultato massimo, divisioni con il resto, numero di esercizi per sessione e disegno di aiuto.
 - **Addizioni in colonna** e **Sottrazioni in colonna:** cifre dei numeri (2, 3 o 4), con o senza riporto (o prestito), numero di esercizi.
 - **Moltiplicazioni in colonna:** cifre del numero da moltiplicare (2 o 3), moltiplicatore a 1 o 2 cifre, numero di esercizi.
 - **Divisioni in colonna:** cifre del dividendo (2, 3 o 4), cifre del divisore (1 o 2), divisioni con il resto, sottrazioni scritte o metodo breve, tabellina di aiuto, numero di esercizi.
+
+## Percorso a livelli
+
+Ogni attività ha una **scala di livelli**: ogni gradino aggiunge una sola difficoltà nuova. Per esempio, le addizioni con gli oggetti vanno da "entro 5" a "entro 10", poi "oltre il 10, con il sacchetto da 10", poi "entro 20, anche scritte". Le divisioni in colonna tengono lontano lo 0 nel risultato fino al livello 5, e le sottrazioni in colonna hanno un livello apposta per il prestito che attraversa uno 0. In ogni attività la voce **Difficoltà** permette di scegliere tra "Percorso a livelli" (predefinito) e "Scelgo io", che usa le impostazioni manuali di sempre.
+
+**Criterio di padronanza.** Dopo ogni sessione il programma registra quanti esercizi sono stati risolti al primo tentativo.
+- Due sessioni di fila con almeno l'80% (per esempio 4 su 5): il ragazzo è **pronto per il livello successivo**.
+- Due sessioni di fila sotto il 40%: il programma suggerisce di **valutare un passo indietro**.
+
+**Chi decide.** Per impostazione predefinita decide il docente: il programma propone, un pallino arancione sull'ingranaggio segnala le proposte in attesa, e nell'area docente si cambia livello con due pulsanti. Con "Passaggio al livello successivo: automatico" si sale da soli, e il ragazzo lo sa già alla fine della sessione ("La prossima volta passi al livello 3"), così il cambiamento non arriva a sorpresa. Il passo indietro non è mai automatico, perché non deve sembrare una punizione.
+
+I livelli e le sessioni sono salvati solo sul dispositivo, senza nomi. Se più ragazzi usano lo stesso dispositivo, condividono lo stesso percorso: per percorsi separati servirebbero profili per ragazzo, da valutare anche con il responsabile della protezione dei dati della scuola.
+
+## Il sacchetto da 10: il valore posizionale
+
+Le operazioni in colonna si reggono su un'idea sola: **10 unità fanno 1 decina**. Il programma la rende visibile con un sacchetto, lo stesso in tutte le attività:
+
+- **Addizioni con gli oggetti:** quando la ciotola arriva a 10 pezzi, il ragazzo preme "Fai il sacchetto da 10" e i 10 pezzi diventano un sacchetto. Alla fine si conta "sacchetto (10) e altri 3". È il riporto, fatto con le mani.
+- **Sottrazioni con gli oggetti:** da 10 in su la ciotola contiene un sacchetto chiuso e i pezzi sciolti. Se quelli sciolti non bastano, bisogna "aprire il sacchetto" e si ottengono 10 pezzi. È il prestito, fatto con le mani.
+- **In colonna:** al momento del riporto compare "12 = [sacchetto] ●● · 1 decina e 2 unità"; al momento del prestito, "[sacchetto] = 10 unità · 1 decina aperta".
 
 ## Le attività "Addizioni", "Sottrazioni" e "Moltiplicazioni"
 

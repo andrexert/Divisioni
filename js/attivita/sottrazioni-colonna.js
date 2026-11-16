@@ -28,11 +28,34 @@
       { chiave: 'prestito', etichetta: 'Con il prestito', predefinito: false, opzioni: Impariamo.SI_NO },
       { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 3, opzioni: C.opzioniNumeriche([2, 3, 5]) }
     ],
+    // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
+    livelli: [
+      { nome: '2 cifre, senza prestito', imp: { cifre: 2, prestito: false, zeri: false } },
+      { nome: '2 cifre, con il prestito', imp: { cifre: 2, prestito: true, zeri: false } },
+      { nome: '3 cifre, senza prestito', imp: { cifre: 3, prestito: false, zeri: false } },
+      { nome: '3 cifre, con il prestito', imp: { cifre: 3, prestito: true, zeri: false } },
+      { nome: '4 cifre, con il prestito', imp: { cifre: 4, prestito: true, zeri: false } },
+      { nome: 'Con gli zeri: il prestito arriva da lontano', imp: { cifre: 4, prestito: true, zeri: true } }
+    ],
     avvia: avvia
   });
 
   function cifra(n, posizione) { return Math.floor(n / Math.pow(10, posizione)) % 10; }
   function Il(n) { var s = Q.il(n); return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  // Simula i prestiti da destra: c'è un prestito che deve attraversare uno 0?
+  function prestitoDaLontano(a, b, n) {
+    var v = [];
+    for (var p = 0; p < n; p++) v[p] = cifra(a, p);
+    for (var q = 0; q < n; q++) {
+      if (v[q] >= cifra(b, q)) continue;
+      var da = q + 1;
+      if (v[da] === 0) return true;
+      v[da]--;
+      v[q] += 10;
+    }
+    return false;
+  }
 
   function genera(opz) {
     var n = opz.cifre;
@@ -42,7 +65,11 @@
       var b = C.casuale(min, a - 1);
       var prestiti = 0;
       for (var p = 0; p < n; p++) if (cifra(a, p) < cifra(b, p)) prestiti++;
-      if (opz.prestito ? prestiti > 0 : prestiti === 0) return { a: a, b: b, n: n };
+      if (!(opz.prestito ? prestiti > 0 : prestiti === 0)) continue;
+      // zeri: true = serve un prestito "da lontano" (attraverso uno 0); false = mai
+      if (opz.zeri === true && !prestitoDaLontano(a, b, n)) continue;
+      if (opz.zeri === false && prestitoDaLontano(a, b, n)) continue;
+      return { a: a, b: b, n: n };
     }
     return opz.prestito ? { a: 52, b: 27, n: 2 } : { a: 58, b: 23, n: 2 };
   }
@@ -128,6 +155,7 @@
                 ', ' + (zeri === 1 ? 'lo 0 diventa 9' : 'gli 0 diventano 9') + ' e ' + Q.il(vecchio) + ' diventa ' + valore[j] + '.'
               : Il(prima) + ' diventa ' + (prima - 1) + ' e ' + Q.il(vecchio) + ' diventa ' + valore[j] + '.');
             calcola(j);
+            passo.mostraPrestito(); // 1 decina aperta = 10 unità
           }
         );
       }

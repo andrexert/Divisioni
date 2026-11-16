@@ -14,6 +14,11 @@
 
   var CHIAVE_ARCHIVIO = 'impariamo.impostazioni.v1';
   var CHIAVE_ULTIMA_SESSIONE = 'impariamo.ultima-sessione.v1';
+  var CHIAVE_LIVELLI = 'impariamo.livelli.v1';
+
+  // Criterio di padronanza: due sessioni di fila al livello attuale
+  var SOGLIA_PRONTO = 0.8;      // almeno l'80% al primo tentativo (es. 4 su 5): pronto per il livello dopo
+  var SOGLIA_FATICA = 0.4;      // sotto il 40% due volte: il docente valuta di tornare indietro
   var SFONDO_MENU = 'img/sfondo-menu.png';
   var SFONDO_LARGHEZZA = 320, SFONDO_ALTEZZA = 192; // dimensioni originali degli sfondi
   var PAROLA_DOCENTE = 'docente'; // da scrivere per aprire le impostazioni
@@ -31,6 +36,13 @@
       opzioni: [{ valore: 'vivaci', testo: 'Vivaci' }, { valore: 'tenui', testo: 'Tenui (più calmi)' }]
     },
     { chiave: 'sfondi', etichetta: 'Sfondi illustrati', predefinito: true, opzioni: SI_NO },
+    {
+      chiave: 'avanzamento', etichetta: 'Passaggio al livello successivo', predefinito: 'docente',
+      opzioni: [
+        { valore: 'docente', testo: 'Lo decido io (il programma propone)' },
+        { valore: 'automatico', testo: 'Automatico' }
+      ]
+    },
     { chiave: 'caratteriGrandi', etichetta: 'Caratteri più grandi', predefinito: false, opzioni: SI_NO },
     { chiave: 'altoContrasto', etichetta: 'Alto contrasto', predefinito: false, opzioni: SI_NO }
   ];
@@ -97,6 +109,7 @@
 
   function carica() {
     var salvate = leggi(CHIAVE_ARCHIVIO) || {};
+    statoLivelli = leggi(CHIAVE_LIVELLI) || {};
     impostazioni.generale = conValoriValidi(IMPOSTAZIONI_GENERALI, salvate.generale);
     elencoAttivita.forEach(function (a) {
       impostazioni[a.id] = conValoriValidi(a.impostazioni || [], salvate[a.id]);
@@ -104,6 +117,71 @@
   }
 
   function salva() { scrivi(CHIAVE_ARCHIVIO, impostazioni); }
+
+  /* ---------- Percorso a livelli ---------- */
+
+  /*
+   * Le attività con "livelli" hanno una scala ordinata: ogni gradino aggiunge una sola
+   * difficoltà. In modalità "percorso" le impostazioni del livello sostituiscono quelle
+   * manuali di difficoltà. Dopo ogni sessione si registra quanti esercizi sono stati
+   * risolti al primo tentativo e si valuta se proporre il livello successivo.
+   * (I dati restano su questo dispositivo e non contengono nomi.)
+   */
+  var statoLivelli = {};
+
+  function statoDi(a) {
+    var st = statoLivelli[a.id];
+    if (!st || typeof st.livello !== 'number') st = statoLivelli[a.id] = { livello: 0, sessioni: [] };
+    st.livello = Math.max(0, Math.min(a.livelli.length - 1, st.livello));
+    return st;
+  }
+
+  function inPercorso(a) {
+    return !!a.livelli && impostazioni[a.id].difficolta === 'percorso';
+  }
+
+  // 'su' (pronto per il livello dopo), 'giu' (fa fatica), oppure null
+  function valuta(a) {
+    if (!inPercorso(a)) return null;
+    var st = statoDi(a);
+    var ultime = st.sessioni.slice(-2);
+    if (ultime.length < 2) return null;
+    var quote = ultime.map(function (x) { return x.totale ? x.alPrimoTentativo / x.totale : 0; });
+    if (st.livello < a.livelli.length - 1 && quote.every(function (q) { return q >= SOGLIA_PRONTO; })) return 'su';
+    if (st.livello > 0 && quote.every(function (q) { return q < SOGLIA_FATICA; })) return 'giu';
+    return null;
+  }
+
+  function cambiaLivello(a, nuovo) {
+    var st = statoDi(a);
+    st.livello = Math.max(0, Math.min(a.livelli.length - 1, nuovo));
+    st.sessioni = [];
+    scrivi(CHIAVE_LIVELLI, statoLivelli);
+  }
+
+  // Le impostazioni con cui parte l'attività: quelle del docente più quelle del livello
+  function opzioniEffettive(a) {
+    var opz = {};
+    Object.keys(impostazioni[a.id]).forEach(function (k) { opz[k] = impostazioni[a.id][k]; });
+    if (inPercorso(a)) {
+      var imp = a.livelli[statoDi(a).livello].imp;
+      Object.keys(imp).forEach(function (k) { opz[k] = imp[k]; });
+    }
+    return opz;
+  }
+
+  // Proposte in attesa per il docente (pallino sull'ingranaggio)
+  function proposte() {
+    if (impostazioni.generale.avanzamento !== 'docente') return [];
+    return elencoAttivita.filter(function (a) { return valuta(a); });
+  }
+
+  function aggiornaSegnale() {
+    var n = proposte().length;
+    var bottone = document.getElementById('btn-impostazioni');
+    bottone.classList.toggle('con-proposta', n > 0);
+    bottone.setAttribute('aria-label', 'Impostazioni per il docente' + (n ? ' (' + n + (n === 1 ? ' proposta' : ' proposte') + ' di livello)' : ''));
+  }
 
   /* ---------- Aspetto ---------- */
 
@@ -358,6 +436,7 @@
     if (aggiornamentoPronto) { window.location.reload(); return; }
     pulisci('Impariamo insieme', null);
     sulMenu = true;
+    aggiornaSegnale();
     attivitaCorrente = null;
     contenuto.appendChild(el('div', { classe: 'consegna' }, [el('p', { testo: 'Scegli che cosa vuoi fare.' })]));
     var griglia = el('div', { classe: 'menu' });
@@ -376,6 +455,7 @@
     if (aggiornamentoPronto) { window.location.reload(); return; }
     pulisci(area.titolo, VERSO_MENU);
     sulMenu = true;
+    aggiornaSegnale();
     preparaAttivita(area);
     contenuto.appendChild(consegna('Come vuoi lavorare?'));
     var griglia = el('div', { classe: 'menu menu-area' });
@@ -390,7 +470,10 @@
     preparaAttivita(a);
     var area = el('div', { classe: 'area-attivita' });
     contenuto.appendChild(area);
-    a.avvia(area, impostazioni[a.id], {
+    if (inPercorso(a)) {
+      area.appendChild(el('p', { classe: 'livello-attuale', testo: 'Livello ' + (statoDi(a).livello + 1) + ' di ' + a.livelli.length }));
+    }
+    a.avvia(area, opzioniEffettive(a), {
       el: el,
       parla: parla,
       suono: suono,
@@ -412,20 +495,35 @@
       alPrimoTentativo: risultato.alPrimoTentativo,
       quando: new Date().toISOString()
     });
+    var annuncio = null;
+    if (inPercorso(a)) {
+      var st = statoDi(a);
+      st.sessioni.push({ totale: risultato.totale, alPrimoTentativo: risultato.alPrimoTentativo });
+      st.sessioni = st.sessioni.slice(-4);
+      // In automatico si sale da soli (mai si scende): il ragazzo lo sa già adesso,
+      // così il cambiamento della prossima volta non è una sorpresa
+      if (valuta(a) === 'su' && impostazioni.generale.avanzamento === 'automatico') {
+        cambiaLivello(a, st.livello + 1);
+        annuncio = 'Hai imparato bene! La prossima volta passi al livello ' + (statoDi(a).livello + 1) + '.';
+      }
+      scrivi(CHIAVE_LIVELLI, statoLivelli);
+    }
     pulisci(a.titolo, precedenteDi(a));
     preparaAttivita(a);
+    aggiornaSegnale();
     var ancora = el('button', { type: 'button', classe: 'bottone', testo: 'Ancora', onclick: function () { avviaAttivita(a); } });
     contenuto.appendChild(el('div', { classe: 'fine' }, [
       mascotte('mascotte-grande'),
       el('p', { classe: 'fine-grande', testo: 'Finito!' }),
       el('p', { testo: 'Hai completato ' + risultato.totale + ' esercizi. Ottimo lavoro.' }),
+      annuncio ? el('p', { classe: 'annuncio-livello', testo: annuncio }) : null,
       el('div', { classe: 'riga-bottoni' }, [
         ancora,
         el('button', { type: 'button', classe: 'bottone secondario', testo: 'Torna indietro', onclick: precedenteDi(a).vai })
       ])
     ]));
     ancora.focus();
-    parla('Finito! Ottimo lavoro.');
+    parla('Finito! Ottimo lavoro.' + (annuncio ? ' ' + annuncio : ''));
   }
 
   function testoUltimaSessione() {
@@ -445,17 +543,71 @@
       classe: 'nota-docente',
       testo: 'Le impostazioni si salvano da sole, solo su questo dispositivo e in questo browser. Nessun dato viene inviato in rete.'
     }));
+    // Proposte di livello in attesa, in cima: è la cosa da guardare per prima
+    var daVedere = elencoAttivita.filter(function (a) {
+      var v = valuta(a);
+      return v === 'giu' || (v === 'su' && impostazioni.generale.avanzamento === 'docente');
+    });
+    if (daVedere.length) {
+      contenuto.appendChild(el('section', { classe: 'sezione-impostazioni proposte' }, [
+        el('h2', { testo: 'Proposte di livello' }),
+        el('ul', {}, daVedere.map(function (a) {
+          return el('li', {}, [el('a', { href: '#livello-' + a.id, testo: nomeAttivita(a) }), ': ' + testoProposta(a)]);
+        }))
+      ]));
+    }
     contenuto.appendChild(sezioneImpostazioni('Generali', IMPOSTAZIONI_GENERALI, impostazioni.generale));
     elencoAttivita.forEach(function (a) {
       if (a.impostazioni && a.impostazioni.length) {
-        var area = areaDi(a);
-        var nome = area && a.etichetta ? area.titolo + ': ' + a.etichetta.toLowerCase() : a.titolo;
-        contenuto.appendChild(sezioneImpostazioni(nome, a.impostazioni, impostazioni[a.id]));
+        var sezione = sezioneImpostazioni(nomeAttivita(a), a.impostazioni, impostazioni[a.id]);
+        if (a.livelli) sezione.insertBefore(bloccoLivello(a), sezione.children[1]);
+        contenuto.appendChild(sezione);
       }
     });
     contenuto.appendChild(el('div', { classe: 'riga-bottoni' }, [
       el('button', { type: 'button', classe: 'bottone', testo: 'Fatto', onclick: mostraMenu })
     ]));
+  }
+
+  function nomeAttivita(a) {
+    var area = areaDi(a);
+    return area && a.etichetta ? area.titolo + ': ' + a.etichetta.toLowerCase() : a.titolo;
+  }
+
+  function testoProposta(a) {
+    var v = valuta(a);
+    var n = statoDi(a).livello;
+    if (v === 'su') return 'pronto per il livello ' + (n + 2) + ' (' + a.livelli[n + 1].nome + ')';
+    if (v === 'giu') return 'fa fatica: valuta di tornare al livello ' + n + ' (' + a.livelli[n - 1].nome + ')';
+    return '';
+  }
+
+  // Riquadro del percorso: i livelli, quello attuale, le ultime sessioni, la proposta
+  function bloccoLivello(a) {
+    var blocco = el('div', { classe: 'blocco-livello', id: 'livello-' + a.id });
+    function disegna() {
+      var st = statoDi(a);
+      blocco.innerHTML = '';
+      blocco.appendChild(el('p', { classe: 'livello-titolo', testo: 'Percorso: livello ' + (st.livello + 1) + ' di ' + a.livelli.length }));
+      blocco.appendChild(el('ol', { classe: 'elenco-livelli' }, a.livelli.map(function (l, i) {
+        return el('li', { classe: i === st.livello ? 'livello-corrente' : null, testo: l.nome });
+      })));
+      blocco.appendChild(el('p', { classe: 'nota-docente', testo: st.sessioni.length
+        ? 'Ultime sessioni a questo livello (risolti al primo tentativo): ' + st.sessioni.map(function (x) { return x.alPrimoTentativo + ' su ' + x.totale; }).join(', ') + '.'
+        : 'Nessuna sessione ancora a questo livello.' }));
+      var v = valuta(a);
+      if (v) blocco.appendChild(el('p', { classe: 'proposta-livello ' + v, testo: k(testoProposta(a)) }));
+      if (!inPercorso(a)) blocco.appendChild(el('p', { classe: 'nota-docente', testo: 'Il percorso vale solo con "Difficoltà: Percorso a livelli".' }));
+      blocco.appendChild(el('div', { classe: 'riga-bottoni' }, [
+        el('button', { type: 'button', classe: 'scelta', testo: '\u2190 Livello precedente', disabled: st.livello === 0,
+          onclick: function () { cambiaLivello(a, st.livello - 1); disegna(); aggiornaSegnale(); } }),
+        el('button', { type: 'button', classe: 'scelta', testo: 'Livello successivo \u2192', disabled: st.livello === a.livelli.length - 1,
+          onclick: function () { cambiaLivello(a, st.livello + 1); disegna(); aggiornaSegnale(); } })
+      ]));
+    }
+    function k(t) { return t.charAt(0).toUpperCase() + t.slice(1) + '.'; }
+    disegna();
+    return blocco;
   }
 
   function sezioneImpostazioni(nome, descrittori, valori) {
@@ -571,7 +723,18 @@
   }
 
   window.Impariamo = {
-    registra: function (attivita) { elencoAttivita.push(attivita); },
+    registra: function (attivita) {
+      if (attivita.livelli) {
+        attivita.impostazioni = [{
+          chiave: 'difficolta', etichetta: 'Difficoltà', predefinito: 'percorso',
+          opzioni: [
+            { valore: 'percorso', testo: 'Percorso a livelli (consigliato)' },
+            { valore: 'manuale', testo: 'Scelgo io con le impostazioni qui sotto' }
+          ]
+        }].concat(attivita.impostazioni || []);
+      }
+      elencoAttivita.push(attivita);
+    },
     registraArea: function (area) { elencoAree.push(area); },
     avvia: avvia,
     SI_NO: SI_NO

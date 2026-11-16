@@ -65,6 +65,15 @@
       },
       { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 3, opzioni: opzioniNumeriche([2, 3, 5]) }
     ],
+    // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
+    livelli: [
+      { nome: '2 cifre, senza resto', imp: { cifreDividendo: 2, cifreDivisore: 1, conResto: false, evitaZeri: true } },
+      { nome: '2 cifre, con il resto', imp: { cifreDividendo: 2, cifreDivisore: 1, conResto: true, evitaZeri: true } },
+      { nome: '3 cifre, senza resto', imp: { cifreDividendo: 3, cifreDivisore: 1, conResto: false, evitaZeri: true } },
+      { nome: '3 cifre, con il resto', imp: { cifreDividendo: 3, cifreDivisore: 1, conResto: true, evitaZeri: true } },
+      { nome: 'Anche con lo 0 nel risultato, fino a 4 cifre', imp: { cifreDividendo: 4, cifreDivisore: 1, conResto: true, evitaZeri: false } },
+      { nome: 'Divisore a 2 cifre', imp: { cifreDividendo: 3, cifreDivisore: 2, conResto: true, evitaZeri: false } }
+    ],
     avvia: avvia
   });
 
@@ -93,6 +102,8 @@
           n -= n % d;                  // senza resto: si scende al multiplo più vicino
         }
         if (n < minN || n < d * 2) continue; // il risultato deve essere almeno 2
+        // Ai primi livelli niente 0 nel risultato: è il caso più insidioso, arriva dopo
+        if (opz.evitaZeri && String(Math.floor(n / d)).indexOf('0') >= 0) continue;
         if (n + ':' + d === ultimaOperazione) continue;
         ultimaOperazione = n + ':' + d;
         return { dividendo: n, divisore: d };

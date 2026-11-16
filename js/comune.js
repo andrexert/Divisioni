@@ -139,6 +139,16 @@
       return { nodo: nodo, dentro: dentro };
     }
 
+    // Il sacchetto da 10: la decina. Nella ciotola occupa una riga intera: [sacchetto] 10.
+    // Serve a vedere il valore posizionale: 10 unità fanno 1 decina, e una decina si
+    // può riaprire in 10 unità (è il prestito delle sottrazioni in colonna).
+    function sacchetto() {
+      return el('span', { classe: 'sacchetto', role: 'img', 'aria-label': 'Sacchetto da 10' }, [
+        el('img', { src: 'img/sacchetto.png', alt: '', draggable: 'false' }),
+        el('span', { classe: 'sacchetto-numero', testo: '10' })
+      ]);
+    }
+
     // Un mucchio di n oggetti
     function mucchio(n, classe) {
       var m = el('div', { classe: 'mucchio' + (classe ? ' ' + classe : '') });
@@ -269,6 +279,25 @@
       return attiva ? attiva.gestisciTasto(tasto) : false;
     });
 
+    // Un bottone d'azione ("Fai il sacchetto", "Apri il sacchetto"), anche con Invio o Spazio
+    function azione(etichetta, fai) {
+      var bottone = el('button', { type: 'button', classe: 'bottone grande', testo: etichetta });
+      var nodo = el('div', { classe: 'riga-bottoni risposta' }, [bottone]);
+      function premi() {
+        if (nodo.classList.contains('conclusa')) return;
+        nodo.classList.add('conclusa');
+        nodo.parentNode && nodo.parentNode.removeChild(nodo);
+        fai();
+      }
+      bottone.addEventListener('click', premi);
+      nodo.gestisciTasto = function (tasto) {
+        if (tasto !== 'Enter' && tasto !== ' ') return false;
+        premi();
+        return true;
+      };
+      return nodo;
+    }
+
     function domanda(testo, nodoRisposta) {
       return el('div', { classe: 'domanda' }, [el('p', { classe: 'domanda-testo', testo: testo }), nodoRisposta]);
     }
@@ -337,8 +366,10 @@
       oggetto: oggetto,
       ciotola: ciotola,
       mucchio: mucchio,
+      sacchetto: sacchetto,
       risposta: risposta,
       domanda: domanda,
+      azione: azione,
       aiuto: aiuto,
       sessione: sessione
     };

@@ -27,6 +27,14 @@
       { chiave: 'riporto', etichetta: 'Con il riporto', predefinito: false, opzioni: Impariamo.SI_NO },
       { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 3, opzioni: C.opzioniNumeriche([2, 3, 5]) }
     ],
+    // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
+    livelli: [
+      { nome: '2 cifre, senza riporto', imp: { cifre: 2, riporto: false } },
+      { nome: '2 cifre, con il riporto', imp: { cifre: 2, riporto: true } },
+      { nome: '3 cifre, senza riporto', imp: { cifre: 3, riporto: false } },
+      { nome: '3 cifre, con il riporto', imp: { cifre: 3, riporto: true } },
+      { nome: '4 cifre, con il riporto', imp: { cifre: 4, riporto: true } }
+    ],
     avvia: avvia
   });
 
@@ -130,6 +138,7 @@
                   colonna(j - 1);
                 }
               );
+              passo.mostraDecine(s); // 12 = sacchetto + 2: 1 decina e 2 unità
             }
           }
         );
