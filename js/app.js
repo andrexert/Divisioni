@@ -42,6 +42,8 @@
   var voceItaliana = null;
   var attivitaCorrente = null;  // serve per mostrare la sua mascotte
   var gestoreTasti = null;      // l'attività in corso può ricevere i tasti premuti
+  var sulMenu = false;          // true quando si vede il menu principale
+  var aggiornamentoPronto = false;
 
   /* ---------- Utilità DOM ---------- */
 
@@ -292,6 +294,7 @@
   /* ---------- Schermate ---------- */
 
   function pulisci(nuovoTitolo, mostraBottoneMenu) {
+    sulMenu = false;
     zittisci();
     gestoreTasti = null;
     contenuto.innerHTML = '';
@@ -309,7 +312,10 @@
   }
 
   function mostraMenu() {
+    // Una versione nuova scaricata mentre si lavorava entra in uso tornando al menu
+    if (aggiornamentoPronto) { window.location.reload(); return; }
     pulisci('Impariamo insieme', false);
+    sulMenu = true;
     attivitaCorrente = null;
     contenuto.appendChild(el('div', { classe: 'consegna' }, [el('p', { testo: 'Scegli che cosa vuoi fare.' })]));
     var griglia = el('div', { classe: 'menu' });
@@ -493,9 +499,24 @@
   // Funzionamento senza rete: solo quando l'app è pubblicata su un sito (https).
   // Aprendo index.html con un doppio clic (file://) i service worker non esistono
   // e il programma funziona comunque, leggendo i file dal disco.
+  //
+  // Aggiornamenti: a ogni apertura il browser controlla se è uscita una versione
+  // nuova e, se sì, la scarica in sottofondo. Appena è pronta, l'app si ricarica
+  // da sola se si è sul menu; se un ragazzo sta lavorando, aspetta che torni al
+  // menu, così un esercizio non viene mai interrotto. Se l'app resta aperta a
+  // lungo (per esempio tutta la mattina), il controllo si ripete ogni mezz'ora.
   function registraServiceWorker() {
     if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
-    navigator.serviceWorker.register('sw.js').catch(function () { /* senza copia offline */ });
+    var avevaGiaUnaVersione = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      // Alla prima visita non c'è nulla da aggiornare: la pagina è già quella giusta
+      if (!avevaGiaUnaVersione) { avevaGiaUnaVersione = true; return; }
+      aggiornamentoPronto = true;
+      if (sulMenu) window.location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').then(function (registrazione) {
+      setInterval(function () { registrazione.update().catch(function () { /* offline */ }); }, 30 * 60 * 1000);
+    }).catch(function () { /* senza copia offline */ });
   }
 
   window.Impariamo = {

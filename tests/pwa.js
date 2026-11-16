@@ -60,12 +60,29 @@ function verifica(condizione, descrizione) {
     ));
     verifica(immagini.every(Boolean), 'senza rete: mascotte e sfondo si caricano');
 
+    // Nuova pubblicazione mentre un ragazzo sta facendo un esercizio:
+    // l'app non deve ricaricarsi finché non si torna al menu
     await contesto.setOffline(false);
+    await p.evaluate(() => { window.segnaposto = 'pagina vecchia'; });
     execFileSync('python3', ['tools/prepara_sito.py', 'prova-2'], { cwd: RADICE });
     await p.evaluate(() => navigator.serviceWorker.getRegistration().then(r => r.update()));
     await p.waitForTimeout(2000);
     const dopo = await p.evaluate(() => caches.keys());
     verifica(dopo.length === 1 && dopo[0] === 'impariamo-prova-2', 'nuova pubblicazione: copia aggiornata ' + JSON.stringify(dopo));
+    verifica(await p.evaluate(() => window.segnaposto) === 'pagina vecchia', 'durante un esercizio l\'app non si ricarica');
+    await Promise.all([p.waitForEvent('load'), p.click('#btn-menu')]);
+    verifica(await p.evaluate(() => window.segnaposto) === undefined, 'tornando al menu l\'app passa alla versione nuova');
+
+    // Nuova pubblicazione mentre si è sul menu: l'app si ricarica da sola
+    await p.evaluate(() => { window.segnaposto = 'pagina vecchia'; });
+    execFileSync('python3', ['tools/prepara_sito.py', 'prova-3'], { cwd: RADICE });
+    await Promise.all([
+      p.waitForEvent('load', { timeout: 10000 }).catch(() => null),
+      p.evaluate(() => navigator.serviceWorker.getRegistration().then(r => r.update()))
+    ]);
+    await p.waitForTimeout(500);
+    verifica(await p.evaluate(() => window.segnaposto) === undefined, 'sul menu l\'app si aggiorna da sola');
+    verifica(JSON.stringify(await p.evaluate(() => caches.keys())) === '["impariamo-prova-3"]', 'resta solo la copia più recente');
     verifica(erroriPagina.length === 0, 'nessun errore nella pagina ' + erroriPagina.join(' | '));
   } finally {
     await browser.close();

@@ -10,7 +10,7 @@ Funziona su **qualsiasi dispositivo con un browser recente**: Mac (anche gli iMa
 
 ### Online (consigliato)
 
-L'app si pubblica con **GitHub Pages**. Ogni modifica al branch `main` viene pubblicata automaticamente dal workflow `.github/workflows/pubblica.yml`, e i computer ricevono la versione nuova alla riapertura successiva dell'app, mai a metà di un esercizio.
+L'app si pubblica con **GitHub Pages**. Ogni modifica al branch `main` viene pubblicata automaticamente dal workflow `.github/workflows/pubblica.yml`, in un paio di minuti. Ogni dispositivo controlla gli aggiornamenti a ogni apertura e, se l'app resta aperta, ogni mezz'ora. Quando trova una versione nuova la scarica in sottofondo e si ricarica da sola appena si è sul menu: se un ragazzo sta facendo un esercizio, aspetta che torni al menu, così il lavoro non viene mai interrotto.
 
 Configurazione, da fare una volta sola:
 
