@@ -64,6 +64,13 @@ async function controllaBordi(pagina, momento) {
     momento + ': la pagina esce dallo schermo (' + misure.pagina + ' px su ' + misure.schermo + ')');
 }
 
+// Dal menu: tocca l'area (0 addizioni, 1 sottrazioni, 2 moltiplicazioni, 3 divisioni),
+// poi l'attività ("Con gli oggetti" o "In colonna")
+async function entra(p, area, attivita) {
+  await p.premi('.scheda-attivita >> nth=' + area);
+  await p.premi('.scheda-attivita:has-text("' + attivita + '")');
+}
+
 const consegna = (p) => p.locator('.consegna').first().textContent().then(t => t.replace(/\s+/g, ' ').trim());
 
 /* ---------- Risposte ---------- */
@@ -126,7 +133,7 @@ async function fineSessione(p, cosa) {
 async function addizioni(browser, profilo, tema, sommaMax) {
   const cosa = 'Addizioni ' + tema + ' fino a ' + sommaMax;
   const p = await apri(browser, profilo, { addizioni: { tema, sommaMax, modalita: 'alterna', numeroEsercizi: 3, aiuto: 'richiesta' } });
-  await p.premi('.scheda-attivita >> nth=0');
+  await entra(p, 0, 'Con gli oggetti');
   for (let es = 0; es < 3; es++) {
     if (await p.locator('.mucchio-tocca').count()) {
       while (await p.locator('.mucchio-tocca .pezzo').count()) await p.premi('.mucchio-tocca .pezzo');
@@ -155,7 +162,7 @@ async function addizioni(browser, profilo, tema, sommaMax) {
 async function sottrazioni(browser, profilo, tema, numeroMax) {
   const cosa = 'Sottrazioni ' + tema + ' da ' + numeroMax;
   const p = await apri(browser, profilo, { sottrazioni: { tema, numeroMax, modalita: 'alterna', numeroEsercizi: 3, aiuto: 'richiesta' } });
-  await p.premi('.scheda-attivita >> nth=1');
+  await entra(p, 1, 'Con gli oggetti');
   for (let es = 0; es < 3; es++) {
     if (await p.locator('.pezzo').count()) {
       const a = await p.locator('.pezzo').count();
@@ -186,7 +193,7 @@ async function sottrazioni(browser, profilo, tema, numeroMax) {
 async function moltiplicazioni(browser, profilo, tema, tabellina) {
   const cosa = 'Moltiplicazioni ' + tema + ' tabellina ' + tabellina;
   const p = await apri(browser, profilo, { moltiplicazioni: { tema, tabellina, modalita: 'alterna', numeroEsercizi: 3, aiuto: 'richiesta' } });
-  await p.premi('.scheda-attivita >> nth=2');
+  await entra(p, 2, 'Con gli oggetti');
   for (let es = 0; es < 3; es++) {
     if (await p.locator('.scatola:not(.statica)').count()) {
       const n = Number((await consegna(p)).match(/(?:Dai|Metti) (\d+)/)[1]);
@@ -221,7 +228,7 @@ async function divisioni(browser, profilo, tema) {
   const p = await apri(browser, profilo, {
     divisioni: { tema, modalita: 'alterna', conResto: true, numeroEsercizi: 3, divisoreMax: 5, quozienteMax: 10 }
   });
-  await p.premi('.scheda-attivita >> nth=3');
+  await entra(p, 3, 'Con gli oggetti');
   for (let es = 0; es < 3; es++) {
     if (await p.locator('.scatola:not(.statica)').count()) {
       // Distribuisci: prima un tocco "sbagliato" (due volte la stessa ciotola), poi a turno
@@ -258,7 +265,7 @@ async function divisioni(browser, profilo, tema) {
 
 async function colonna(browser, profilo, imp, usaTastiera) {
   const p = await apri(browser, profilo, { colonna: Object.assign({ numeroEsercizi: 2, tabellina: 'errore' }, imp) });
-  await p.premi('.scheda-attivita >> nth=4');
+  await entra(p, 3, 'In colonna');
   const nome = 'colonna ' + JSON.stringify(imp) + (usaTastiera ? ' (tastiera)' : '');
   const scrivi = async (v) => {
     if (usaTastiera) { for (const c of String(v)) await p.keyboard.press(c); await p.keyboard.press('Enter'); }
@@ -304,14 +311,73 @@ async function colonna(browser, profilo, imp, usaTastiera) {
   await chiudi(p, nome);
 }
 
+/* ---------- Addizioni, sottrazioni e moltiplicazioni in colonna ---------- */
+
+async function operazioneInColonna(browser, profilo, area, id, imp, usaTastiera) {
+  const nome = id + ' ' + JSON.stringify(imp) + (usaTastiera ? ' (tastiera)' : '');
+  const conf = {}; conf[id] = Object.assign({ numeroEsercizi: 2 }, imp);
+  const p = await apri(browser, profilo, conf);
+  await entra(p, area, 'In colonna');
+  const tastiera = Object.assign({}, profilo, { tastiera: usaTastiera });
+  const bottone = async (testo) => {
+    if (usaTastiera) await p.keyboard.press(testo === 'Sì' ? 's' : testo === 'No' ? 'n' : 'Enter');
+    else await p.premi(testo ? `.colonna-comandi button:text-is("${testo}")` : '.colonna-comandi button');
+  };
+  let sbaglia1 = true, controllato = false;
+  const numero = async (v) => {
+    if (sbaglia1) { await sbaglia(p, v, tastiera); sbaglia1 = false; }
+    await rispondi(p, v, tastiera, nome);
+  };
+  for (let passi = 0; passi < 400; passi++) {
+    if (await p.locator('.fine').count()) break;
+    const t = await consegna(p);
+    let m;
+    if (!controllato && await p.locator('.quaderno').count()) {
+      const fuori = await p.evaluate(() => document.querySelector('.quaderno').getBoundingClientRect().right - window.innerWidth);
+      verifica(fuori <= 1, nome + ': il quaderno esce dallo schermo di ' + Math.round(fuori) + ' px');
+      await controllaBordi(p, nome);
+      controllato = true;
+    }
+    if (t.startsWith('Hai finito')) {
+      const scritta = await p.textContent('.esito .operazione');
+      const [a, b, r] = scritta.match(/\d+/g).map(Number);
+      const giusto = id.startsWith('addizioni') ? a + b : id.startsWith('sottrazioni') ? a - b : a * b;
+      verifica(r === giusto, nome + ': esito sbagliato ' + scritta);
+      if (usaTastiera) await p.keyboard.press('Enter'); else await p.premi('.esito button');
+      sbaglia1 = true;
+    } else if ((m = t.match(/^Quale cifra scrivi sotto\? (\d+) non sta/))) await numero(Number(m[1]) % 10);
+    else if ((m = t.match(/^Puoi fare (\d+) − (\d+)\?/))) await bottone(+m[1] >= +m[2] ? 'Sì' : 'No');
+    else if (/Chiedi un prestito/.test(t)) {
+      const prima = await p.locator('.cella.barrata').count();
+      await bottone('Chiedi il prestito');
+      verifica(await p.locator('.cella.barrata').count() > prima, nome + ': il prestito non barra nessuna cifra');
+    } else if (/^Nella colonna delle unità c'è solo/.test(t)) await bottone(null);
+    else if ((m = t.match(/^Quanto fa ([\d +×−]+)\?/))) {
+      const espr = m[1].replace(/×/g, '*').replace(/−/g, '-');
+      await numero(Function('return ' + espr)()); // es. "7 × 4 + 2"
+    } else { verifica(false, nome + ': consegna sconosciuta "' + t + '"'); break; }
+  }
+  verifica(await p.locator('.fine').count() === 1, nome + ': la sessione non arriva a "Finito!"');
+  await chiudi(p, nome);
+}
+
 /* ---------- Menu, impostazioni, aspetto ---------- */
 
 async function menuEImpostazioni(browser, profilo) {
   const p = await apri(browser, profilo, {});
   await controllaBordi(p, 'menu');
   const titoli = await p.locator('.scheda-titolo').allTextContents();
-  verifica(titoli.join('|') === 'Addizioni|Sottrazioni|Moltiplicazioni|Divisioni|Divisioni in colonna',
-    'il menu non segue il percorso: ' + titoli.join(', '));
+  verifica(titoli.join('|') === 'Addizioni|Sottrazioni|Moltiplicazioni|Divisioni',
+    'il menu non mostra le quattro aree del percorso: ' + titoli.join(', '));
+  // Dentro ogni area: "Con gli oggetti" e "In colonna"; il pulsante in alto risale di un livello
+  for (let a = 0; a < 4; a++) {
+    await p.premi('.scheda-attivita >> nth=' + a);
+    const dentro = await p.locator('.scheda-titolo').allTextContents();
+    verifica(dentro.join('|') === 'Con gli oggetti|In colonna', 'area ' + titoli[a] + ': ' + dentro.join(', '));
+    await controllaBordi(p, 'area ' + titoli[a]);
+    await p.premi('#btn-menu');
+  }
+  verifica((await p.textContent('#titolo')) === 'Impariamo insieme', 'il pulsante in alto non riporta al menu');
   const sfondo = await p.evaluate(() => getComputedStyle(document.body, '::before').backgroundImage);
   verifica(/sfondo-menu\.png/.test(sfondo), 'manca lo sfondo del menu');
   // Ingranaggio: un clic apre l'area docente, che chiede la parola DOCENTE
@@ -366,6 +432,12 @@ async function menuEImpostazioni(browser, profilo) {
       { cifreDividendo: 4, cifreDivisore: 2, conResto: true, sottrazioni: true }
     ];
     for (const imp of combinazioni) await colonna(browser, profilo, imp, false);
+    await operazioneInColonna(browser, profilo, 0, 'addizioni-colonna', { cifre: 2, riporto: false }, false);
+    await operazioneInColonna(browser, profilo, 0, 'addizioni-colonna', { cifre: 4, riporto: true }, !!profilo.tastiera);
+    await operazioneInColonna(browser, profilo, 1, 'sottrazioni-colonna', { cifre: 2, prestito: false }, false);
+    await operazioneInColonna(browser, profilo, 1, 'sottrazioni-colonna', { cifre: 4, prestito: true }, !!profilo.tastiera);
+    await operazioneInColonna(browser, profilo, 2, 'moltiplicazioni-colonna', { cifre: 2, moltiplicatore: 1 }, false);
+    await operazioneInColonna(browser, profilo, 2, 'moltiplicazioni-colonna', { cifre: 3, moltiplicatore: 2 }, !!profilo.tastiera);
     if (profilo.tastiera) await colonna(browser, profilo, combinazioni[3], true);
     console.log('    ' + (errori === prima ? 'tutto a posto' : (errori - prima) + ' errori'));
   }

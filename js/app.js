@@ -36,6 +36,8 @@
   ];
 
   var elencoAttivita = [];
+  var elencoAree = [];          // macro aree del menu: una per operazione
+  var indietro = null;          // dove porta il pulsante in alto a sinistra
   var impostazioni = { generale: {} };
   var contenuto, titolo, bottoneMenu;
   var audioCtx = null;
@@ -296,7 +298,9 @@
 
   /* ---------- Schermate ---------- */
 
-  function pulisci(nuovoTitolo, mostraBottoneMenu) {
+  // "precedente" è la pagina a cui porta il pulsante in alto a sinistra:
+  // { etichetta: 'Menu', vai: mostraMenu }, oppure null sul menu principale
+  function pulisci(nuovoTitolo, precedente) {
     sulMenu = false;
     zittisci();
     gestoreTasti = null;
@@ -304,7 +308,11 @@
     contenuto.style.removeProperty('--colore-attivita');
     impostaSfondo(SFONDO_MENU);
     titolo.textContent = nuovoTitolo;
-    bottoneMenu.hidden = !mostraBottoneMenu;
+    bottoneMenu.hidden = !precedente;
+    if (precedente) {
+      bottoneMenu.textContent = '\u2190 ' + precedente.etichetta;
+      indietro = precedente.vai;
+    }
     window.scrollTo(0, 0);
   }
 
@@ -314,34 +322,71 @@
     if (a.sfondo) impostaSfondo(a.sfondo);
   }
 
+  var VERSO_MENU = { etichetta: 'Menu', vai: function () { mostraMenu(); } };
+
+  function areaDi(a) {
+    for (var i = 0; i < elencoAree.length; i++) if (elencoAree[i].id === a.area) return elencoAree[i];
+    return null;
+  }
+
+  // Da un'attività si torna alla sua area; da un'area (o da un'attività senza area) al menu
+  function precedenteDi(a) {
+    var area = areaDi(a);
+    return area ? { etichetta: area.titolo, vai: function () { mostraArea(area); } } : VERSO_MENU;
+  }
+
+  // Una scheda del menu: un'area o un'attività
+  function scheda(cosa, titoloScheda, alClic) {
+    var icona = cosa.immagine
+      ? el('img', { classe: 'scheda-immagine', src: cosa.immagine, alt: '', draggable: 'false' })
+      : el('span', { classe: 'scheda-icona', 'aria-hidden': 'true', testo: cosa.icona });
+    return el('button', {
+      type: 'button', classe: 'scheda-attivita',
+      style: cosa.colore ? '--colore-attivita: ' + cosa.colore : null,
+      onclick: alClic
+    }, [
+      cosa.passo ? el('span', { classe: 'scheda-passo', 'aria-hidden': 'true', testo: String(cosa.passo) }) : null,
+      icona,
+      el('span', { classe: 'scheda-titolo', testo: titoloScheda }),
+      el('span', { classe: 'scheda-descrizione', testo: cosa.descrizione })
+    ]);
+  }
+
+  // Menu principale: le macro aree (una per operazione), più le attività senza area
   function mostraMenu() {
     // Una versione nuova scaricata mentre si lavorava entra in uso tornando al menu
     if (aggiornamentoPronto) { window.location.reload(); return; }
-    pulisci('Impariamo insieme', false);
+    pulisci('Impariamo insieme', null);
     sulMenu = true;
     attivitaCorrente = null;
     contenuto.appendChild(el('div', { classe: 'consegna' }, [el('p', { testo: 'Scegli che cosa vuoi fare.' })]));
     var griglia = el('div', { classe: 'menu' });
+    elencoAree.forEach(function (area) {
+      griglia.appendChild(scheda(area, area.titolo, function () { mostraArea(area); }));
+    });
     elencoAttivita.forEach(function (a) {
-      var icona = a.immagine
-        ? el('img', { classe: 'scheda-immagine', src: a.immagine, alt: '', draggable: 'false' })
-        : el('span', { classe: 'scheda-icona', 'aria-hidden': 'true', testo: a.icona });
-      griglia.appendChild(el('button', {
-        type: 'button', classe: 'scheda-attivita',
-        style: a.colore ? '--colore-attivita: ' + a.colore : null,
-        onclick: function () { avviaAttivita(a); }
-      }, [
-        a.passo ? el('span', { classe: 'scheda-passo', 'aria-hidden': 'true', testo: String(a.passo) }) : null,
-        icona,
-        el('span', { classe: 'scheda-titolo', testo: a.titolo }),
-        el('span', { classe: 'scheda-descrizione', testo: a.descrizione })
-      ]));
+      if (!areaDi(a)) griglia.appendChild(scheda(a, a.titolo, function () { avviaAttivita(a); }));
+    });
+    contenuto.appendChild(griglia);
+  }
+
+  // Pagina di un'area: poche scelte ("Con gli oggetti", "In colonna")
+  function mostraArea(area) {
+    // Anche qui nessun esercizio è in corso: è il momento giusto per la versione nuova
+    if (aggiornamentoPronto) { window.location.reload(); return; }
+    pulisci(area.titolo, VERSO_MENU);
+    sulMenu = true;
+    preparaAttivita(area);
+    contenuto.appendChild(consegna('Come vuoi lavorare?'));
+    var griglia = el('div', { classe: 'menu menu-area' });
+    elencoAttivita.forEach(function (a) {
+      if (a.area === area.id) griglia.appendChild(scheda(a, a.etichetta || a.titolo, function () { avviaAttivita(a); }));
     });
     contenuto.appendChild(griglia);
   }
 
   function avviaAttivita(a) {
-    pulisci(a.titolo, true);
+    pulisci(a.titolo, precedenteDi(a));
     preparaAttivita(a);
     var area = el('div', { classe: 'area-attivita' });
     contenuto.appendChild(area);
@@ -367,7 +412,7 @@
       alPrimoTentativo: risultato.alPrimoTentativo,
       quando: new Date().toISOString()
     });
-    pulisci(a.titolo, true);
+    pulisci(a.titolo, precedenteDi(a));
     preparaAttivita(a);
     var ancora = el('button', { type: 'button', classe: 'bottone', testo: 'Ancora', onclick: function () { avviaAttivita(a); } });
     contenuto.appendChild(el('div', { classe: 'fine' }, [
@@ -376,7 +421,7 @@
       el('p', { testo: 'Hai completato ' + risultato.totale + ' esercizi. Ottimo lavoro.' }),
       el('div', { classe: 'riga-bottoni' }, [
         ancora,
-        el('button', { type: 'button', classe: 'bottone secondario', testo: 'Torna al menu', onclick: mostraMenu })
+        el('button', { type: 'button', classe: 'bottone secondario', testo: 'Torna indietro', onclick: precedenteDi(a).vai })
       ])
     ]));
     ancora.focus();
@@ -394,7 +439,7 @@
   }
 
   function mostraImpostazioni() {
-    pulisci('Impostazioni', true);
+    pulisci('Impostazioni', VERSO_MENU);
     contenuto.appendChild(el('p', { classe: 'riepilogo-docente', testo: testoUltimaSessione() }));
     contenuto.appendChild(el('p', {
       classe: 'nota-docente',
@@ -403,7 +448,9 @@
     contenuto.appendChild(sezioneImpostazioni('Generali', IMPOSTAZIONI_GENERALI, impostazioni.generale));
     elencoAttivita.forEach(function (a) {
       if (a.impostazioni && a.impostazioni.length) {
-        contenuto.appendChild(sezioneImpostazioni(a.titolo, a.impostazioni, impostazioni[a.id]));
+        var area = areaDi(a);
+        var nome = area && a.etichetta ? area.titolo + ': ' + a.etichetta.toLowerCase() : a.titolo;
+        contenuto.appendChild(sezioneImpostazioni(nome, a.impostazioni, impostazioni[a.id]));
       }
     });
     contenuto.appendChild(el('div', { classe: 'riga-bottoni' }, [
@@ -445,7 +492,7 @@
   // sufficiente. Non è una protezione di sicurezza (la parola è scritta nel README):
   // serve solo a evitare che le impostazioni cambino per sbaglio.
   function mostraAccessoDocente() {
-    pulisci('Area docente', true);
+    pulisci('Area docente', VERSO_MENU);
     var campo = el('input', {
       type: 'text', id: 'parola-docente', classe: 'campo-parola',
       autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false',
@@ -494,7 +541,7 @@
         window.speechSynthesis.addEventListener('voiceschanged', cercaVoceItaliana);
       }
     }
-    bottoneMenu.addEventListener('click', mostraMenu);
+    bottoneMenu.addEventListener('click', function () { if (indietro) indietro(); });
     document.getElementById('btn-impostazioni').addEventListener('click', mostraAccessoDocente);
     mostraMenu();
     registraServiceWorker();
@@ -525,6 +572,7 @@
 
   window.Impariamo = {
     registra: function (attivita) { elencoAttivita.push(attivita); },
+    registraArea: function (area) { elencoAree.push(area); },
     avvia: avvia,
     SI_NO: SI_NO
   };

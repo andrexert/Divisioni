@@ -36,13 +36,14 @@
 
   Impariamo.registra({
     id: 'colonna',
-    passo: 5,
+    area: 'divisioni',
+    etichetta: 'In colonna',
     titolo: 'Divisioni in colonna',
     icona: '÷',
     immagine: 'img/gufo.png',
     sfondo: 'img/sfondo-bosco.png',
     colore: '#8b5cf6',
-    descrizione: 'Un passo alla volta',
+    descrizione: 'Sul quaderno, un passo alla volta',
     impostazioni: [
       { chiave: 'cifreDividendo', etichetta: 'Cifre del numero da dividere', predefinito: 2, opzioni: opzioniNumeriche([2, 3, 4]) },
       {

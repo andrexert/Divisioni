@@ -16,13 +16,14 @@
 
   Impariamo.registra({
     id: 'divisioni',
-    passo: 4,
+    area: 'divisioni',
+    etichetta: 'Con gli oggetti',
     titolo: 'Divisioni',
     icona: ':',
     immagine: 'img/volpe.png',
     sfondo: 'img/sfondo-prato.png',
     colore: '#ff7417',
-    descrizione: 'Dividere in parti uguali',
+    descrizione: 'Animali e cibo da dividere',
     impostazioni: [
       {
         chiave: 'modalita', etichetta: 'Tipo di esercizio', predefinito: 'distribuisci',

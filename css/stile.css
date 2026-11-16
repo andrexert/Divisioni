@@ -746,3 +746,27 @@ img.animale, img.cibo, img.mascotte, img.mascotte-grande, img.scheda-immagine {
 
 .senza-gap .figura-operazione > *, .senza-gap .salti > * { margin: 0.25rem; }
 .senza-gap .risposta-tastierino > * { margin: 0.4rem; }
+
+/* ---------- 14. Macro aree e operazioni in colonna ---------- */
+
+/* Pagina di un'area: due schede ("Con gli oggetti", "In colonna") al centro */
+.menu-area { grid-template-columns: repeat(auto-fit, minmax(220px, 300px)); justify-content: center; }
+
+/* Sigle delle colonne sopra le cifre: u, da, h, k */
+.cella.sigla { font-size: 0.42em; font-weight: 600; color: var(--testo-tenue); align-items: flex-end; padding-bottom: 0.25em; }
+/* Riporti: piccoli, in alto, colorati */
+.cella.riporto { font-size: 0.55em; color: var(--accento); align-items: flex-end; }
+/* Sottrazione: la cifra che ha prestato è barrata, quella nuova sta sopra */
+.cella.barrata { color: var(--testo-tenue); text-decoration: line-through; text-decoration-thickness: 3px; }
+.cella.nuova { font-size: 0.75em; color: var(--accento); align-items: flex-end; }
+/* Cifra piccola in alto a sinistra: l'1 del prestito o del riporto nella somma */
+.cella[data-piccolo]::before {
+  content: attr(data-piccolo);
+  position: absolute;
+  top: 0.05em; left: 0.08em;
+  font-size: 0.45em;
+  font-weight: 700;
+  color: var(--accento);
+}
+.cella.trattino { color: var(--testo-tenue); }
+.cella.zero-iniziale { color: var(--testo-tenue); opacity: 0.5; }

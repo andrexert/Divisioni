@@ -15,13 +15,14 @@
 
   Impariamo.registra({
     id: 'addizioni',
-    passo: 1,
+    area: 'addizioni',
+    etichetta: 'Con gli oggetti',
     titolo: 'Addizioni',
     icona: '+',
     immagine: 'img/orsetto.png',
     sfondo: 'img/sfondo-spiaggia.png',
     colore: '#0891b2',
-    descrizione: 'Mettere insieme',
+    descrizione: 'Animali e cibo da contare',
     impostazioni: [
       {
         chiave: 'modalita', etichetta: 'Tipo di esercizio', predefinito: 'oggetti',

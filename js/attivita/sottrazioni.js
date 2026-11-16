@@ -14,13 +14,14 @@
 
   Impariamo.registra({
     id: 'sottrazioni',
-    passo: 2,
+    area: 'sottrazioni',
+    etichetta: 'Con gli oggetti',
     titolo: 'Sottrazioni',
     icona: '−',
     immagine: 'img/ranocchia.png',
     sfondo: 'img/sfondo-stagno.png',
     colore: '#16a34a',
-    descrizione: 'Togliere',
+    descrizione: 'Animali e cibo da contare',
     impostazioni: [
       {
         chiave: 'modalita', etichetta: 'Tipo di esercizio', predefinito: 'oggetti',
