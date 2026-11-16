@@ -39,7 +39,7 @@ Il programma è scritto in JavaScript "classico" (ES5), senza librerie né compi
 
 ### Impostazioni per il docente
 
-Le impostazioni si aprono **tenendo premuto** l'ingranaggio in alto a destra per un secondo e mezzo: così un ragazzo che ci clicca per sbaglio non ci entra. Dalla tastiera si aprono anche con Invio. Nella prima pagina delle impostazioni c'è il **resoconto dell'ultima sessione** su quel dispositivo: è lì, e non alla fine degli esercizi, perché un ragazzo che legge "0 su 5" dopo aver finito può viverla male.
+Le impostazioni si aprono dall'ingranaggio in alto a destra: si apre l'**Area docente**, dove bisogna scrivere la parola **DOCENTE** (maiuscole o minuscole non contano). Non è una protezione di sicurezza, visto che la parola è scritta qui, ma basta perché un ragazzo che clicca per curiosità non cambi le impostazioni per sbaglio. Nella prima pagina delle impostazioni c'è il **resoconto dell'ultima sessione** su quel dispositivo: è lì, e non alla fine degli esercizi, perché un ragazzo che legge "0 su 5" dopo aver finito può viverla male.
 
 Sono disponibili:
 
@@ -115,7 +115,7 @@ I test automatici simulano i dispositivi ma non li sostituiscono del tutto. Quan
 1. Aprire l'indirizzo: compaiono il menu, la volpe, il gufo e lo sfondo con le colline.
 2. Divisioni: distribuire il cibo toccando gli animali, rispondere una volta sbagliato e una giusto.
 3. Divisioni in colonna: fare un esercizio intero; sul computer provare anche a scrivere con la tastiera.
-4. Impostazioni (tenere premuto l'ingranaggio): attivare la lettura vocale e controllare che la voce sia italiana.
+4. Impostazioni (ingranaggio, poi scrivere DOCENTE): attivare la lettura vocale e controllare che la voce sia italiana.
 5. Staccare il Wi-Fi e ricaricare: l'app deve funzionare lo stesso.
 
 ## Struttura dei file

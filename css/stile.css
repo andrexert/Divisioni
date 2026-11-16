@@ -140,25 +140,7 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   font-size: 1rem;
   font-weight: 600;
 }
-.zona-impostazioni { display: flex; align-items: center; gap: 0.5rem; }
-.suggerimento { font-size: 0.7rem; color: var(--barra-testo); }
-#btn-impostazioni {
-  position: relative;
-  overflow: hidden;
-  color: var(--testo-tenue);
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-/* Barra che si riempie mentre il docente tiene premuto */
-#btn-impostazioni::after {
-  content: "";
-  position: absolute;
-  left: 0; bottom: 0;
-  height: 4px; width: 0;
-  background: var(--accento);
-}
-#btn-impostazioni.in-pressione::after { width: 100%; transition: width 1.5s linear; }
+#btn-impostazioni { color: var(--testo-tenue); }
 
 /* ---------- 4. Elementi comuni ---------- */
 
@@ -531,7 +513,34 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
 .fine { text-align: center; padding-top: 2rem; font-size: 1.2rem; }
 .fine-grande { font-size: 2.6rem; font-weight: 700; color: var(--giusto); margin: 0; }
 
-/* ---------- 9. Impostazioni ---------- */
+/* ---------- 9. Impostazioni e area docente ---------- */
+
+.accesso-docente { max-width: 520px; margin: 1.5rem auto; text-align: center; font-size: 1.1rem; }
+/* Almeno 16px: sotto quella misura iPhone e iPad ingrandiscono la pagina al tocco */
+.campo-parola {
+  width: 100%;
+  max-width: 320px;
+  min-height: 3rem;
+  padding: 0.4rem 0.8rem;
+  border: 3px solid var(--accento);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+  color: var(--testo);
+  font: inherit;
+  font-size: 1.2rem;
+  font-size: max(16px, 1.2rem);
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+.campo-parola:focus { outline: 4px solid var(--accento-tenue); }
+/* Etichetta letta dai lettori di schermo ma non mostrata */
+.etichetta-nascosta {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
 
 .riepilogo-docente {
   margin: 0.5rem 0 0;
@@ -658,16 +667,12 @@ img.animale, img.cibo, img.mascotte, img.mascotte-grande, img.scheda-immagine {
   .colonna-area { gap: 1rem; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  #btn-impostazioni.in-pressione::after { transition: none; }
-}
-
 /* ---------- 12. Safari meno recenti ---------- */
 
 /* iPad con iOS 14.4 o precedente e Mac con Safari non aggiornato non conoscono
    "gap" nei layout flessibili: app.js aggiunge la classe "senza-gap" e lo spazio
    tra gli elementi viene dato con i margini */
-.senza-gap .barra > *, .senza-gap .zona-impostazioni > *, .senza-gap .consegna > *,
+.senza-gap .barra > *, .senza-gap .consegna > *,
 .senza-gap .avanzamento > *, .senza-gap .esito-testa > *, .senza-gap .etichetta-avanzo > *,
 .senza-gap .scelte > *, .senza-gap .impostazione > *, .senza-gap .tabellina-elenco > *,
 .senza-gap .scheda-attivita > * { margin: 0.2rem 0.3rem; }

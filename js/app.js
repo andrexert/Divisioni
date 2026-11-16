@@ -16,7 +16,7 @@
   var CHIAVE_ULTIMA_SESSIONE = 'impariamo.ultima-sessione.v1';
   var SFONDO_MENU = 'img/sfondo-menu.png';
   var SFONDO_LARGHEZZA = 320, SFONDO_ALTEZZA = 192; // dimensioni originali degli sfondi
-  var DURATA_PRESSIONE_LUNGA = 1500; // millisecondi
+  var PAROLA_DOCENTE = 'docente'; // da scrivere per aprire le impostazioni
 
   var SI_NO = [
     { valore: true, testo: 'Sì' },
@@ -37,7 +37,7 @@
 
   var elencoAttivita = [];
   var impostazioni = { generale: {} };
-  var contenuto, titolo, bottoneMenu, suggerimento;
+  var contenuto, titolo, bottoneMenu;
   var audioCtx = null;
   var voceItaliana = null;
   var attivitaCorrente = null;  // serve per mostrare la sua mascotte
@@ -428,40 +428,41 @@
     return sezione;
   }
 
-  /* ---------- Accesso docente: pressione lunga sull'ingranaggio ---------- */
+  /* ---------- Accesso docente ---------- */
 
-  function collegaPressioneLunga(bottone, azione) {
-    var timer = null;
-
-    function inizia(e) {
-      if (e.button !== undefined && e.button !== 0) return;
-      bottone.classList.add('in-pressione');
-      timer = setTimeout(function () {
-        timer = null;
-        bottone.classList.remove('in-pressione');
-        azione();
-      }, DURATA_PRESSIONE_LUNGA);
-    }
-
-    function annulla() {
-      if (!timer) return;
-      clearTimeout(timer);
-      timer = null;
-      bottone.classList.remove('in-pressione');
-      suggerimento.textContent = 'Tieni premuto per le impostazioni';
-      setTimeout(function () { suggerimento.textContent = ''; }, 2500);
-    }
-
-    bottone.addEventListener('pointerdown', inizia);
-    bottone.addEventListener('pointerup', annulla);
-    bottone.addEventListener('pointerleave', annulla);
-    bottone.addEventListener('pointercancel', annulla);
-    // Sui touch screen la pressione lunga aprirebbe il menu del sistema
-    bottone.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-    // Da tastiera (Invio o Spazio) si apre subito: serve al docente e all'accessibilità
-    bottone.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); azione(); }
+  // L'ingranaggio apre una piccola schermata che chiede di scrivere una parola:
+  // per un adulto è immediato, per un ragazzo che clicca per curiosità è un ostacolo
+  // sufficiente. Non è una protezione di sicurezza (la parola è scritta nel README):
+  // serve solo a evitare che le impostazioni cambino per sbaglio.
+  function mostraAccessoDocente() {
+    pulisci('Area docente', true);
+    var campo = el('input', {
+      type: 'text', id: 'parola-docente', classe: 'campo-parola',
+      autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false',
+      'aria-describedby': 'spiegazione-docente'
     });
+    var avviso = messaggio();
+    var modulo = el('form', { classe: 'accesso-docente', novalidate: true }, [
+      el('p', { id: 'spiegazione-docente', testo: 'Per aprire le impostazioni, scrivi la parola DOCENTE.' }),
+      el('label', { classe: 'etichetta-nascosta', 'for': 'parola-docente', testo: 'Parola' }),
+      campo,
+      avviso,
+      el('div', { classe: 'riga-bottoni' }, [
+        el('button', { type: 'submit', classe: 'bottone', testo: 'Apri le impostazioni' }),
+        el('button', { type: 'button', classe: 'bottone secondario', testo: 'Annulla', onclick: mostraMenu })
+      ])
+    ]);
+    modulo.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (campo.value.trim().toLowerCase() === PAROLA_DOCENTE) {
+        mostraImpostazioni();
+      } else {
+        avviso.textContent = 'La parola non è giusta. Scrivi DOCENTE.';
+        campo.select();
+      }
+    });
+    contenuto.appendChild(modulo);
+    campo.focus();
   }
 
   /* ---------- Avvio ---------- */
@@ -470,7 +471,6 @@
     contenuto = document.getElementById('contenuto');
     titolo = document.getElementById('titolo');
     bottoneMenu = document.getElementById('btn-menu');
-    suggerimento = document.getElementById('suggerimento');
 
     carica();
     applicaAspetto();
@@ -485,7 +485,7 @@
       }
     }
     bottoneMenu.addEventListener('click', mostraMenu);
-    collegaPressioneLunga(document.getElementById('btn-impostazioni'), mostraImpostazioni);
+    document.getElementById('btn-impostazioni').addEventListener('click', mostraAccessoDocente);
     mostraMenu();
     registraServiceWorker();
   }

@@ -179,13 +179,17 @@ async function menuEImpostazioni(browser, profilo) {
   verifica(await p.locator('.scheda-attivita').count() === 2, 'nel menu non ci sono due attività');
   const sfondo = await p.evaluate(() => getComputedStyle(document.body, '::before').backgroundImage);
   verifica(/sfondo-menu\.png/.test(sfondo), 'manca lo sfondo del menu');
-  // Pressione lunga sull'ingranaggio
-  const ingranaggio = await p.locator('#btn-impostazioni').boundingBox();
-  await p.mouse.move(ingranaggio.x + 10, ingranaggio.y + 10);
-  await p.mouse.down();
-  await p.waitForTimeout(1700);
-  await p.mouse.up();
-  verifica((await p.textContent('#titolo')) === 'Impostazioni', 'la pressione lunga non apre le impostazioni');
+  // Ingranaggio: un clic apre l'area docente, che chiede la parola DOCENTE
+  await p.premi('#btn-impostazioni');
+  verifica((await p.textContent('#titolo')) === 'Area docente', 'il clic sull\'ingranaggio non apre l\'area docente');
+  await controllaBordi(p, 'area docente');
+  await p.fill('#parola-docente', 'ciao');
+  await p.press('#parola-docente', 'Enter');
+  verifica((await p.textContent('#titolo')) === 'Area docente', 'una parola sbagliata apre le impostazioni');
+  verifica((await p.textContent('.accesso-docente .messaggio')).includes('non è giusta'), 'manca l\'avviso per la parola sbagliata');
+  await p.fill('#parola-docente', ' Docente ');
+  await p.premi('.accesso-docente button[type=submit]');
+  verifica((await p.textContent('#titolo')) === 'Impostazioni', 'la parola DOCENTE non apre le impostazioni');
   verifica((await p.textContent('.riepilogo-docente')).includes('Ultima sessione'), 'manca il resoconto per il docente');
   await controllaBordi(p, 'impostazioni');
   // Colori tenui: niente sfondo
