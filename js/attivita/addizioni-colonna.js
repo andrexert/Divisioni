@@ -22,10 +22,10 @@
     immagine: 'img/gufo.png',
     sfondo: 'img/sfondo-bosco.png',
     colore: '#8b5cf6',
+    esercizi: [2, 3, 5],   // pochi, normali, tanti: le operazioni in colonna sono lunghe
     impostazioni: [
       Q.impostazioneCifre('Cifre dei numeri', [2, 3, 4], 2),
-      { chiave: 'riporto', etichetta: 'Con il riporto', predefinito: false, opzioni: Impariamo.SI_NO },
-      { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 3, opzioni: C.opzioniNumeriche([2, 3, 5]) }
+      { chiave: 'riporto', etichetta: 'Con il riporto', predefinito: false, opzioni: Impariamo.SI_NO }
     ],
     // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
     livelli: [
@@ -35,6 +35,15 @@
       { nome: '3 cifre, con il riporto', imp: { cifre: 3, riporto: true } },
       { nome: '4 cifre, con il riporto', imp: { cifre: 4, riporto: true } }
     ],
+    // Esercizi per le schede da stampare, al livello attuale
+    scheda: function (opz, quanti) {
+      var lista = [];
+      for (var i = 0; i < quanti; i++) {
+        var es = genera(opz);
+        lista.push({ tipo: 'colonna', a: es.a, b: es.b, segno: '+', extra: 1, righeVuote: 2, soluzione: es.a + ' + ' + es.b + ' = ' + (es.a + es.b) });
+      }
+      return lista;
+    },
     avvia: avvia
   });
 
@@ -83,10 +92,17 @@
       var quad = Q.crea(k.el, W);
       var passo = Q.passi(k, api, quad.nodo);
 
+      var libero = null; // modalità "da solo": cifre scritte, sbagliate, cursore
       function disegna() {
         var rigaRisultato = {};
         Object.keys(risultato).forEach(function (c) { rigaRisultato[c] = risultato[c]; });
         if (attesa !== null) rigaRisultato[attesa] = { testo: '?', classi: ['da-scrivere'] };
+        if (libero) {
+          Object.keys(libero.valori).forEach(function (c) { rigaRisultato[c] = { testo: libero.valori[c], classi: libero.sbagliate[c] ? ['sbagliata'] : [] }; });
+          // Le cifre da rivedere restano colorate anche mentre si riscrivono
+          Object.keys(libero.sbagliate).forEach(function (c) { if (libero.valori[c] === undefined) rigaRisultato[c] = { testo: '', classi: ['sbagliata'] }; });
+          if (libero.cursore !== null) rigaRisultato[libero.cursore] = { testo: '?', classi: ['da-scrivere'].concat(libero.sbagliate[libero.cursore] ? ['sbagliata'] : []) };
+        }
         var cifreRiporti = {};
         Object.keys(riporti).forEach(function (c) { cifreRiporti[c] = { testo: riporti[c], classi: ['riporto'] }; });
         var evid = [];
@@ -109,6 +125,28 @@
         colonnaAttiva = j;
         attesa = j;
         disegna();
+        if (opz.guida === 'semiguidato') {
+          // Semiguidato: niente calcolo scritto, solo la colonna evidenziata
+          var ultima = j === primaColonna;
+          return passo.numero(
+            ['Colonna ' + nome + '.', ultima ? 'Scrivi il risultato di questa colonna.' : 'Scrivi la cifra del risultato.'],
+            ultima ? s : s % 10,
+            function () { return 'Non ancora. Somma ' + x + ' + ' + y + (r ? ' e il riporto 1' : '') + (ultima || s < 10 ? '.' : ': se supera 9, scrivi solo le unità.'); },
+            function () {
+              var cifre = Q.allinea(ultima ? s : s % 10, j);
+              Object.keys(cifre).forEach(function (c) { risultato[c] = cifre[c]; });
+              attesa = null;
+              if (ultima) return termina();
+              if (s >= 10) riporti[j - 1] = '1';
+              disegna();
+              colonna(j - 1);
+              if (s >= 10) {
+                passo.avviso.dici('Il riporto 1 va in alto, nella colonna ' + Q.COLONNA_DELLE[ultimaColonna - j + 1] + '.');
+                passo.mostraDecine(s);
+              }
+            },
+            'somma');
+        }
         passo.numero(
           r ? ['Quanto fa ' + x + ' + ' + y + ' + 1?', 'Il + 1 è il riporto, scritto in alto.'] : ['Quanto fa ' + x + ' + ' + y + '?', 'È la colonna ' + nome + '.'],
           s,
@@ -136,22 +174,39 @@
                   disegna();
                   passo.avviso.dici('L\'1 va in alto, nella colonna ' + Q.COLONNA_DELLE[ultimaColonna - j + 1] + ': è il riporto.');
                   colonna(j - 1);
-                }
+                },
+                'unita'
               );
               passo.mostraDecine(s); // 12 = sacchetto + 2: 1 decina e 2 unità
             }
-          }
+          },
+          'somma'
         );
+      }
+
+      // Da solo: il ragazzo scrive tutto il risultato, poi si controlla
+      function daSolo() {
+        var somma = String(es.a + es.b);
+        var colonne = [];
+        for (var i = 0; i < somma.length; i++) colonne.push(ultimaColonna - i);
+        var giuste = somma.split('').reverse();
+        passo.liberi(['Scrivi il risultato.', 'Comincia dalle unità, a destra. Poi premi OK.'], colonne, giuste,
+          function (valori, sbagliate, cursore) {
+            libero = { valori: valori, sbagliate: sbagliate, cursore: cursore };
+            disegna();
+          },
+          termina);
       }
 
       function termina() {
         colonnaAttiva = null;
+        if (libero) libero.cursore = null;
         disegna();
         passo.fine(['Hai finito!', 'Il risultato è ' + (es.a + es.b) + '.']);
         finito(passo.errori());
       }
 
-      colonna(ultimaColonna);
+      if (opz.guida === 'autonomo') daSolo(); else colonna(ultimaColonna);
     }
 
     k.sessione({
@@ -159,7 +214,10 @@
       genera: function () { return genera(opz); },
       chiave: function (es) { return es.a + '+' + es.b; },
       esegui: { colonna: esercizio },
-      scritta: function (es) { return es.a + ' + ' + es.b + ' = ' + (es.a + es.b); }
+      scritta: function (es) {
+        // Il collegamento con la sottrazione: l'addizione al contrario
+        return { operazione: es.a + ' + ' + es.b + ' = ' + (es.a + es.b), dopo: ['Al contrario: ' + (es.a + es.b) + ' \u2212 ' + es.b + ' = ' + es.a] };
+      }
     });
   }
 })();

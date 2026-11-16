@@ -23,6 +23,7 @@
     sfondo: 'img/sfondo-spiaggia.png',
     colore: '#0891b2',
     descrizione: 'Animali e cibo da contare',
+    usaTemi: true,
     impostazioni: [
       {
         chiave: 'modalita', etichetta: 'Tipo di esercizio', predefinito: 'oggetti',
@@ -32,10 +33,7 @@
           { valore: 'alterna', testo: 'Alterna' }
         ]
       },
-      C.impostazioneTema('Animali e cibo'),
-      { chiave: 'sommaMax', etichetta: 'Risultato al massimo', predefinito: 10, opzioni: C.opzioniNumeriche([5, 10, 20]) },
-      C.impostazioneEsercizi(),
-      C.impostazioneAiuto('Disegno di aiuto in "Calcola"')
+      { chiave: 'sommaMax', etichetta: 'Risultato al massimo', predefinito: 10, opzioni: C.opzioniNumeriche([5, 10, 20]) }
     ],
     // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
     livelli: [
@@ -45,8 +43,27 @@
       { nome: 'Oltre il 10, con il sacchetto da 10', imp: { modalita: 'oggetti', sommaMax: 20, oltreDieci: true } },
       { nome: 'Entro 20, anche scritte', imp: { modalita: 'alterna', sommaMax: 20, oltreDieci: false } }
     ],
+    scheda: function (opz, quanti) {
+      var lista = [];
+      for (var i = 0; i < quanti; i++) lista.push((function () { var es = generaEs(opz); return { tipo: 'riga', testo: es.a + ' + ' + es.b + ' =', soluzione: es.a + ' + ' + es.b + ' = ' + es.somma }; })());
+      return lista;
+    },
     avvia: avvia
   });
+
+  // Un esercizio adatto alle impostazioni (serve anche per le schede da stampare)
+  function generaEs(opz) {
+        var a, b;
+        if (opz.oltreDieci) {
+          // Si supera il 10: serve il sacchetto
+          a = C.casuale(2, 9);
+          b = C.casuale(11 - a, 9);
+        } else {
+          a = C.casuale(1, opz.sommaMax - 1);
+          b = C.casuale(1, opz.sommaMax - a);
+        }
+        return { a: a, b: b, somma: a + b };
+      }
 
   function avvia(area, opz, api) {
     var k = Impariamo.kit(area, opz, api);
@@ -153,21 +170,13 @@
 
     k.sessione({
       modi: ['oggetti', 'calcola'],
-      genera: function () {
-        var a, b;
-        if (opz.oltreDieci) {
-          // Si supera il 10: serve il sacchetto
-          a = k.casuale(2, 9);
-          b = k.casuale(11 - a, 9);
-        } else {
-          a = k.casuale(1, opz.sommaMax - 1);
-          b = k.casuale(1, opz.sommaMax - a);
-        }
-        return { a: a, b: b, somma: a + b };
-      },
+      genera: function () { return generaEs(opz); },
       chiave: function (es) { return es.a + '+' + es.b; },
       esegui: { oggetti: conOggetti, calcola: calcola },
-      scritta: function (es) { return es.a + ' + ' + es.b + ' = ' + es.somma; }
+      scritta: function (es) {
+        // Il collegamento con l'operazione inversa
+        return { operazione: es.a + ' + ' + es.b + ' = ' + es.somma, dopo: ['Al contrario: ' + es.somma + ' − ' + es.b + ' = ' + es.a] };
+      }
     });
   }
 })();

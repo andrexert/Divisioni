@@ -7,7 +7,9 @@ Un piccolo programma didattico per ragazzi nello spettro autistico. È un **perc
 3. **Moltiplicazioni** (riccio)
 4. **Divisioni** (volpe)
 
-Il menu principale mostra solo le quattro aree, per non affollare lo schermo. Dentro ogni area ci sono due scelte:
+Dopo le quattro aree c'è **Problemi** (tartaruga): problemi a parole in cui prima si sceglie quale operazione serve, poi la si esegue.
+
+Il menu principale mostra solo le quattro aree e i problemi, per non affollare lo schermo. Dentro ogni area ci sono due scelte:
 
 - **Con gli oggetti**: animali e cibo da contare, mettere insieme, togliere, raggruppare o dividere, poi l'operazione scritta.
 - **In colonna**: il procedimento sul quaderno a quadretti, un passo alla volta, sempre con il gufo, "il maestro del quaderno".
@@ -16,7 +18,7 @@ Il pulsante in alto a sinistra risale sempre di un livello: dall'attività all'a
 
 Ogni tappa usa gli strumenti della precedente: le tabelline servono per la divisione in colonna, la sottrazione per i suoi resti. Le attività con gli oggetti usano gli stessi animali e lo stesso cibo, così il ragazzo ritrova sempre un mondo che conosce.
 
-È una **web app installabile** (PWA): si apre da un indirizzo web, si può installare con la sua icona e, dopo la prima apertura, funziona anche senza connessione. Non raccoglie dati: le uniche informazioni salvate sono le impostazioni scelte dal docente, che restano nel browser del dispositivo che si sta usando (`localStorage`), insieme a un piccolo resoconto dell'ultima sessione per il docente (attività e numero di esercizi risolti al primo tentativo, senza nomi).
+È una **web app installabile** (PWA): si apre da un indirizzo web, si può installare con la sua icona e, dopo la prima apertura, funziona anche senza connessione. Non raccoglie dati: le uniche informazioni salvate sono le impostazioni scelte dal docente, che restano nel browser del dispositivo che si sta usando (`localStorage`), insieme a un piccolo resoconto per il docente (risultati delle ultime sessioni e tipo di errori più frequenti, senza nomi). Nulla viene inviato in rete.
 
 Funziona su **qualsiasi dispositivo con un browser recente**: Mac (anche gli iMac Late 2013 con Safari su Big Sur), PC Windows, Chromebook, iPad e tablet Android, iPhone e telefoni Android. Si usa con il mouse, con il touch o con la tastiera, e la pagina si adatta allo schermo: sui telefoni il quaderno a quadretti si restringe fino a starci per intero.
 
@@ -55,15 +57,24 @@ Il programma è scritto in JavaScript "classico" (ES5), senza librerie né compi
 
 Le impostazioni si aprono dall'ingranaggio in alto a destra: si apre l'**Area docente**, dove bisogna scrivere la parola **DOCENTE** (maiuscole o minuscole non contano). Non è una protezione di sicurezza, visto che la parola è scritta qui, ma basta perché un ragazzo che clicca per curiosità non cambi le impostazioni per sbaglio. Nella prima pagina delle impostazioni c'è il **resoconto dell'ultima sessione** su quel dispositivo: è lì, e non alla fine degli esercizi, perché un ragazzo che legge "0 su 5" dopo aver finito può viverla male.
 
-Sono disponibili:
+Le impostazioni sono divise in modo che il docente veda prima le cose che cambia spesso:
 
-- **Generali:** passaggio al livello successivo (lo decide il docente, oppure automatico), lettura vocale delle consegne (usa le voci italiane di macOS), suoni di conferma, colori vivaci o tenui (per i ragazzi con ipersensibilità visiva), sfondi illustrati sì o no, caratteri più grandi, alto contrasto.
-- **Addizioni** e **Sottrazioni:** tipo di esercizio (con gli oggetti, calcola, alterna), animali e cibo, numero massimo (5, 10 o 20), numero di esercizi, disegno di aiuto.
-- **Moltiplicazioni:** tipo di esercizio (gruppi uguali, tabelline, alterna), animali e cibo, quali tabelline (dal 2 al 5, dal 2 al 10 o una sola), numero di esercizi, aiuto con i salti.
-- **Divisioni:** tipo di esercizio, divisore massimo, risultato massimo, divisioni con il resto, numero di esercizi per sessione e disegno di aiuto.
-- **Addizioni in colonna** e **Sottrazioni in colonna:** cifre dei numeri (2, 3 o 4), con o senza riporto (o prestito), numero di esercizi.
-- **Moltiplicazioni in colonna:** cifre del numero da moltiplicare (2 o 3), moltiplicatore a 1 o 2 cifre, numero di esercizi.
-- **Divisioni in colonna:** cifre del dividendo (2, 3 o 4), cifre del divisore (1 o 2), divisioni con il resto, sottrazioni scritte o metodo breve, tabellina di aiuto, numero di esercizi.
+- **Esercizi, per tutte le attività:** quanti esercizi (pochi, medi, tanti: ogni attività li traduce nel suo numero, per esempio 3/5/10 con gli oggetti e 2/3/5 in colonna), animali e cibo (li sceglie il ragazzo all'inizio, oppure uno fisso), aiuto (sempre, su richiesta, mai), guida nelle operazioni in colonna (guidato, semiguidato, da solo) e passaggio al livello successivo.
+- **Percorso:** per ogni attività, il livello attuale con due piccoli pulsanti ◀ ▶ per spostarlo, l'elenco dei livelli e gli errori più frequenti nelle ultime sessioni (per esempio "il calcolo (3), il prestito (1)").
+- **Aspetto e voce:** lettura vocale, pittogrammi, suoni, colori vivaci o tenui, sfondi, caratteri grandi, alto contrasto.
+- **Schede da stampare:** fogli con esercizi del livello attuale, con o senza soluzioni.
+- **Opzioni avanzate** (chiuse di solito): la difficoltà scelta a mano per ogni attività. Servono solo se si preferisce non usare il percorso a livelli.
+
+Prima ogni attività aveva il suo gruppo completo di impostazioni, con le stesse voci ripetute nove volte: era facile cambiarne una e dimenticare le altre. Ora ciò che vale per il ragazzo (quanto lavorare, quanto aiuto, che animali) si imposta una volta sola, e ciò che è proprio dell'attività (la difficoltà) lo gestisce il percorso.
+
+## Aiuti alla routine e alla comprensione
+
+- **Agenda visiva:** in alto una fila di caselle mostra gli esercizi fatti (✓), quello attuale e la fine, così il ragazzo sa sempre quanto manca.
+- **Scelta dell'animale:** all'inizio il ragazzo sceglie "con chi vuoi giocare". Poter scegliere aumenta la motivazione senza cambiare l'esercizio.
+- **Pittogrammi (CAA):** accanto alle consegne compaiono fino a tre pittogrammi per i verbi chiave (dare, mettere, togliere, contare, dividere...). Si possono spegnere.
+- **Procedura di correzione:** dopo alcuni errori sullo stesso passaggio non si continua a tentare a vuoto: il programma mostra la risposta giusta, la evidenzia e chiede al ragazzo di darla lui. Così l'ultima cosa fatta è sempre giusta.
+- **Aiuto che si riduce (fading):** in colonna, "guidato" spiega ogni calcolo, "semiguidato" indica solo dove lavorare, "da solo" lascia scrivere tutto il risultato e controlla alla fine.
+- **Ponti tra le operazioni:** dopo ogni risposta giusta compare l'operazione inversa ("Al contrario: 8 − 3 = 5"), e nelle divisioni in colonna la prova (quoziente × divisore + resto). Le divisioni con gli oggetti hanno anche il secondo significato della divisione: "fare gruppi" (quante volte il 3 sta nel 12), oltre a "distribuire".
 
 ## Percorso a livelli
 
@@ -150,6 +161,8 @@ Il programma segue alcuni principi pensati per i ragazzi nello spettro autistico
 
 ## Immagini
 
+I pittogrammi in `img/caa/` sono di Sergio Palao, provenienti da [ARASAAC](https://arasaac.org) (Governo di Aragona), con licenza CC BY-NC-SA: si possono usare gratis per scopi non commerciali citando l'autore, e le modifiche vanno condivise con la stessa licenza. L'attribuzione compare anche in fondo alle impostazioni.
+
 Gli animali e le mascotte (orsetto, ranocchia, riccio, volpe e gufo) sono in pixel art, generati con [PixelLab](https://www.pixellab.ai/) e salvati come PNG nella cartella `img/`. Il programma non contatta PixelLab né altri servizi: le immagini sono file normali, quindi tutto continua a funzionare offline e non serve alcuna chiave API. Le immagini del cibo sono state ritagliate a 25×25 pixel e vengono mostrate al doppio della dimensione (a grandezza naturale sui telefoni, dove gli schermi sono più densi). Gli animali (64×64) sono mostrati a 128 o 64 pixel, e anche gli sfondi (320×192) vengono ingranditi di un numero intero di volte. Si usano sempre multipli esatti con `image-rendering: pixelated`, così i pixel restano nitidi.
 
 Ogni schermata ha uno sfondo in pixel art: colline per il menu, una spiaggia per le addizioni, uno stagno per le sottrazioni, un orto per le moltiplicazioni, un prato per le divisioni, un bosco al tramonto per le divisioni in colonna. Il lavoro sta sempre su un pannello chiaro al centro, così lo sfondo resta ai margini e non disturba. Gli sfondi si possono spegnere dalle impostazioni e si spengono da soli con i colori tenui o con l'alto contrasto, perché in quei casi l'obiettivo è ridurre gli stimoli visivi.
@@ -158,7 +171,7 @@ Per aggiungere nuovi temi basta mettere in `img/` un animale e un cibo con lo st
 
 ## Test automatici
 
-`tests/esegui.js` è un "alunno automatico" che usa l'app su cinque dispositivi simulati: computer con Chrome, computer con Safari (WebKit, lo stesso motore), iPhone, iPad e telefono Android. Naviga tra le aree del menu, fa addizioni, sottrazioni e moltiplicazioni con gli oggetti e in colonna (con riporto, prestito anche a cascata, moltiplicatore a due cifre), tutti i temi delle divisioni con gli oggetti e le divisioni in colonna con impostazioni diverse, sbaglia apposta per provare i suggerimenti, usa anche solo la tastiera e controlla che la pagina non esca mai dai bordi dello schermo. `tests/pwa.js` controlla che la web app sia installabile e funzioni senza rete.
+`tests/esegui.js` è un "alunno automatico" che usa l'app su cinque dispositivi simulati: computer con Chrome, computer con Safari (WebKit, lo stesso motore), iPhone, iPad e telefono Android. Naviga tra le aree del menu, fa addizioni, sottrazioni e moltiplicazioni con gli oggetti e in colonna (con riporto, prestito anche a cascata, moltiplicatore a due cifre), tutti i temi delle divisioni con gli oggetti e le divisioni in colonna con impostazioni diverse, prova i problemi, le modalità semiguidata e da sola, le schede da stampare, sbaglia apposta per provare i suggerimenti e la procedura di correzione, usa anche solo la tastiera e controlla che la pagina non esca mai dai bordi dello schermo. `tests/pwa.js` controlla che la web app sia installabile e funzioni senza rete.
 
 I test girano da soli su GitHub a ogni pull request (`.github/workflows/verifica.yml`): se qualcosa non va, si vede prima che la modifica vada online. Per lanciarli sul proprio computer servono Node.js e Python 3:
 
@@ -201,6 +214,8 @@ js/attivita/moltiplicazioni.js           area 3, con gli oggetti
 js/attivita/moltiplicazioni-colonna.js   area 3, in colonna
 js/attivita/divisioni.js                 area 4, con gli oggetti
 js/attivita/colonna.js                   area 4, in colonna
+js/attivita/problemi.js                  problemi a parole
+img/caa/                    pittogrammi ARASAAC per le consegne
 ```
 
 ## Aggiungere una nuova attività

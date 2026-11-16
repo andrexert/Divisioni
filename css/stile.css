@@ -869,3 +869,119 @@ img.animale, img.cibo, img.mascotte, img.mascotte-grande, img.scheda-immagine {
 .proposte a { color: var(--accento); font-weight: 600; }
 /* Pezzi in attesa (prima si fa il sacchetto): si vede che non si possono toccare */
 .mucchio-tocca .pezzo:disabled { opacity: 0.35; outline-style: dotted; }
+
+/* ---------- 17. Agenda visiva: [✓][✓][3][4][5][Finito] ---------- */
+
+.agenda { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.3rem; }
+.agenda-passo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  padding: 0 0.3rem;
+  border: 2px solid var(--bordo);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--testo-tenue);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.agenda-passo.fatto { background: var(--accento); border-color: var(--accento); color: #ffffff; }
+.agenda-passo.attuale { border-color: var(--accento); border-width: 3px; color: var(--accento); background: var(--accento-tenue); }
+.agenda-fine { padding: 0 0.6rem; border-style: dashed; }
+.senza-gap .agenda > * { margin: 0.15rem; }
+
+/* ---------- 18. Pittogrammi CAA sotto la consegna ---------- */
+
+.pittogrammi { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.5rem; }
+.pittogramma {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.2rem 0.3rem;
+  border: 2px solid var(--bordo);
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--testo);
+}
+.pittogramma img { width: 64px; height: 64px; }
+.senza-gap .pittogrammi > * { margin: 0.3rem; }
+
+/* ---------- 19. Correzione e controllo ---------- */
+
+/* La risposta giusta indicata dopo troppi errori: bordo verde tratteggiato, mai rosso */
+.tasto.suggerito, .bottone.suggerito, .scelta-tema .suggerito {
+  outline: 4px dashed var(--giusto);
+  outline-offset: 3px;
+}
+.correzione { margin: 0.5rem 0 0; color: var(--giusto); font-weight: 700; text-align: center; }
+/* "Da solo": la cifra da riscrivere è segnata in arancione (non in rosso) */
+.cella.sbagliata { background: var(--avanzo); color: var(--testo); box-shadow: inset 0 0 0 3px var(--pallino); }
+.tastierino-e-azione { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+.senza-gap .tastierino-e-azione > * { margin: 0.3rem; }
+
+/* Ciotola piena nel "Fare gruppi" */
+.scatola.piena .scatola-pallini { border-style: solid; border-color: var(--giusto); }
+
+/* ---------- 20. Problemi: scelta dell'operazione ---------- */
+
+.scelta-operazione { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.8rem; }
+.bottone-operazione { display: flex; flex-direction: column; align-items: center; min-width: 5.5rem; line-height: 1.1; }
+.bottone-operazione .segno-grande { font-size: 2.2rem; font-weight: 700; }
+.bottone-operazione.giusto { background: var(--giusto); }
+.bottone-operazione:disabled:not(.giusto) { opacity: 0.4; }
+.senza-gap .scelta-operazione > * { margin: 0.4rem; }
+
+/* Scelta degli animali all'inizio */
+.scelta-tema .scheda-attivita { padding: 1rem; }
+
+/* ---------- 21. Impostazioni: percorso compatto e opzioni avanzate ---------- */
+
+.percorso-area { margin: 1rem 0 0.3rem; font-size: 1.05rem; color: var(--testo-tenue); }
+.blocco-livello .riga-bottoni { margin: 0.4rem 0 0; justify-content: flex-start; }
+.dettagli-livelli summary, .avanzate > summary { cursor: pointer; color: var(--accento); font-weight: 600; }
+.dettagli-livelli { margin: 0.2rem 0; font-size: 0.9rem; }
+.errori-frequenti { text-align: left; margin: 0.3rem 0; }
+.avanzate {
+  margin: 1.2rem 0;
+  padding: 0.8rem 1.2rem;
+  border: 2px dashed var(--bordo);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+}
+.avanzate[open] > summary { margin-bottom: 0.5rem; }
+.avanzate .sezione-impostazioni { border-width: 1px; }
+.crediti { margin-top: 1.5rem; }
+
+/* ---------- 22. Schede da stampare ---------- */
+
+.foglio { background: #ffffff; color: #000000; padding: 1rem; border-radius: 6px; }
+.foglio-intestazione { font-size: 1rem; margin: 0 0 0.5rem; }
+.foglio-titolo { font-size: 1.1rem; margin: 0 0 0.8rem; }
+.foglio-esercizi { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); grid-gap: 1.2rem; gap: 1.2rem; }
+.foglio-esercizio { position: relative; padding-top: 1.2rem; break-inside: avoid; page-break-inside: avoid; }
+.foglio-numero { position: absolute; top: 0; left: 0; font-weight: 700; }
+.foglio-riga { font-size: 1.4rem; margin: 0.3rem 0; }
+.foglio .colonna-lavagna { --cella: 1.4rem; font-size: 1rem; box-shadow: none; display: inline-flex; }
+.foglio-soluzioni { margin-top: 1.5rem; font-size: 0.9rem; break-before: page; page-break-before: always; }
+
+@media print {
+  .barra, .solo-schermo, .riga-bottoni, .riepilogo-docente { display: none !important; }
+  html, body { background: #ffffff !important; }
+  .con-sfondo body::before { display: none; }
+  main, .con-sfondo main { max-width: none; margin: 0; padding: 0; box-shadow: none; background: #ffffff; }
+  .foglio { padding: 0; }
+  .foglio .colonna-lavagna { --cella: 0.7cm; border-color: #999999; }
+}
+/* Percorso compatto: una riga per attività */
+.blocco-livello { margin: 0.3rem 0; padding: 0.4rem 0.8rem; }
+.livello-riga { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.livello-riga .livello-titolo { margin: 0; font-weight: 400; font-size: 0.95rem; }
+.livello-pulsanti { display: flex; gap: 0.3rem; flex-shrink: 0; }
+.scelta.piccola { min-height: 2rem; min-width: 2.4rem; padding: 0 0.5rem; }
+.scelta:disabled { opacity: 0.35; cursor: default; }
+.dettagli-livelli { margin: 0.1rem 0 0; }
+.senza-gap .livello-riga > *, .senza-gap .livello-pulsanti > * { margin: 0.15rem; }

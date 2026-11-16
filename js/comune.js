@@ -162,10 +162,38 @@
      * (una fila di 21 tasti sarebbe troppo da guardare).
      * alSbagliato(valore) riceve il numero sbagliato, per dare un suggerimento mirato.
      */
-    function risposta(da, a, corretto, alGiusto, alSbagliato) {
-      return a - da <= 10
-        ? rispostaATasti(da, a, corretto, alGiusto, alSbagliato)
-        : rispostaATastierino(a, corretto, alGiusto, alSbagliato);
+    /*
+     * extra: { tipo: tipo di errore per il docente (es. 'conteggio'),
+     *          correzioneDopo: dopo quanti errori mostrare la risposta giusta (3) }
+     * Procedura di correzione: dopo troppi errori sulla stessa domanda il programma
+     * mostra la risposta giusta e chiede di inserirla. Così il ragazzo non arriva
+     * alla soluzione provando tutti i tasti, e l'ultima cosa che fa è giusta.
+     */
+    var tipoErrore = 'calcolo'; // lo imposta la sessione secondo la modalità
+    function risposta(da, a, corretto, alGiusto, alSbagliato, extra) {
+      extra = extra || {};
+      var errori = 0;
+      var limite = extra.correzioneDopo || 3;
+      var nodo;
+      function sbagliato(valore) {
+        errori++;
+        if (api.errore) api.errore(extra.tipo || tipoErrore);
+        alSbagliato(valore);
+        if (errori >= limite && corretto !== null && corretto !== undefined) {
+          var tasti = nodo.classList.contains('risposta-tastierino');
+          var testo = 'Guarda: la risposta giusta è ' + corretto + '. Ora ' + (tasti ? 'scrivila' : 'premila') + ' tu.';
+          var riga = nodo.querySelector('.correzione') || nodo.appendChild(el('p', { classe: 'correzione' }));
+          riga.textContent = testo;
+          api.parla(testo);
+          Array.prototype.forEach.call(nodo.querySelectorAll('.tasto'), function (t) {
+            if (!tasti && t.textContent === String(corretto)) t.classList.add('suggerito');
+          });
+        }
+      }
+      nodo = a - da <= 10
+        ? rispostaATasti(da, a, corretto, alGiusto, sbagliato)
+        : rispostaATastierino(a, corretto, alGiusto, sbagliato);
+      return nodo;
     }
 
     function rispostaATasti(da, a, corretto, alGiusto, alSbagliato) {
@@ -340,13 +368,14 @@
           api.fine({ totale: opz.numeroEsercizi, alPrimoTentativo: alPrimoTentativo });
           return;
         }
-        var modo = opz.modalita === 'alterna' ? cfg.modi[indice % 2] : opz.modalita;
+        var modo = opz.modalita === 'alterna' ? cfg.modi[indice % cfg.modi.length] : opz.modalita;
         if (!cfg.esegui[modo]) modo = cfg.modi[0];
         var es, tentativi = 0;
         do { es = cfg.genera(modo); tentativi++; } while (cfg.chiave(es) === ultimaChiave && tentativi < 30);
         ultimaChiave = cfg.chiave(es);
         barra.aggiorna(indice);
         scena.innerHTML = '';
+        tipoErrore = cfg.tipoErrore ? cfg.tipoErrore(modo) : (modo === 'calcola' ? 'calcolo' : 'conteggio');
         cfg.esegui[modo](es, function (errori) {
           if (errori === 0) alPrimoTentativo++;
           indice++;
@@ -375,7 +404,14 @@
     };
   }
 
+  // I temi tra cui il ragazzo può scegliere (gli animali, non i pallini)
+  var TEMI_SCELTA = TEMI_ANIMALI.map(function (id) {
+    return { id: id, animale: TEMI[id].animale, testo: TEMI[id].animali.charAt(0).toUpperCase() + TEMI[id].animali.slice(1) + ' e ' + TEMI[id].cibi };
+  });
+
   Impariamo.comune = {
+    TEMI_SCELTA: TEMI_SCELTA,
+    TEMI: TEMI,
     casuale: casuale,
     opzioniNumeriche: opzioniNumeriche,
     impostazioneTema: impostazioneTema,

@@ -23,10 +23,10 @@
     immagine: 'img/gufo.png',
     sfondo: 'img/sfondo-bosco.png',
     colore: '#8b5cf6',
+    esercizi: [2, 3, 5],   // pochi, normali, tanti: le operazioni in colonna sono lunghe
     impostazioni: [
       Q.impostazioneCifre('Cifre dei numeri', [2, 3, 4], 2),
-      { chiave: 'prestito', etichetta: 'Con il prestito', predefinito: false, opzioni: Impariamo.SI_NO },
-      { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 3, opzioni: C.opzioniNumeriche([2, 3, 5]) }
+      { chiave: 'prestito', etichetta: 'Con il prestito', predefinito: false, opzioni: Impariamo.SI_NO }
     ],
     // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
     livelli: [
@@ -37,6 +37,14 @@
       { nome: '4 cifre, con il prestito', imp: { cifre: 4, prestito: true, zeri: false } },
       { nome: 'Con gli zeri: il prestito arriva da lontano', imp: { cifre: 4, prestito: true, zeri: true } }
     ],
+    scheda: function (opz, quanti) {
+      var lista = [];
+      for (var i = 0; i < quanti; i++) {
+        var es = genera(opz);
+        lista.push({ tipo: 'colonna', a: es.a, b: es.b, segno: '−', extra: 0, righeVuote: 2, soluzione: es.a + ' − ' + es.b + ' = ' + (es.a - es.b) });
+      }
+      return lista;
+    },
     avvia: avvia
   });
 
@@ -104,6 +112,12 @@
         var rigaR = {};
         Object.keys(risultato).forEach(function (c) { rigaR[c] = risultato[c]; });
         if (attesa !== null) rigaR[attesa] = { testo: '?', classi: ['da-scrivere'] };
+        if (libero) {
+          Object.keys(libero.valori).forEach(function (c) { rigaR[c] = { testo: libero.valori[c], classi: libero.sbagliate[c] ? ['sbagliata'] : [] }; });
+          // Le cifre da rivedere restano colorate anche mentre si riscrivono
+          Object.keys(libero.sbagliate).forEach(function (c) { if (libero.valori[c] === undefined) rigaR[c] = { testo: '', classi: ['sbagliata'] }; });
+          if (libero.cursore !== null) rigaR[libero.cursore] = { testo: '?', classi: ['da-scrivere'].concat(libero.sbagliate[libero.cursore] ? ['sbagliata'] : []) };
+        }
         var evid = colonnaAttiva === null ? [] : [[1, colonnaAttiva], [2, colonnaAttiva], [3, colonnaAttiva]];
         quad.disegna([
           Q.rigaSigle(W),
@@ -114,12 +128,15 @@
         ], evid);
       }
 
+      var libero = null;
+
       function colonna(j) {
         var y = cifra(es.b, ultima - j);
         colonnaAttiva = j;
         attesa = j;
         disegna();
         var x = valore[j];
+        if (opz.guida === 'semiguidato') return semiguidato(j);
         if (!opz.prestito) return calcola(j);
         passo.siNo(
           ['Puoi fare ' + x + ' − ' + y + '?', 'Guarda la colonna ' + Q.COLONNA_DELLE[ultima - j] + '.'],
@@ -137,27 +154,77 @@
           [Il(valore[j]) + ' è più piccolo ' + Q.del(y) + '.', 'Chiedi un prestito alla colonna ' + Q.COLONNA_DELLE[ultima - j + 1] + '.'],
           'Chiedi il prestito',
           function () {
-            // Si cerca a sinistra la prima cifra che non è 0
-            var da = j - 1;
-            while (valore[da] === 0) da--;
-            var prima = valore[da];
-            var zeri = j - 1 - da;
-            for (var c = da; c < j; c++) {
-              valore[c] = c === da ? valore[c] - 1 : 9;
-              barrata[c] = true;
-            }
-            var vecchio = valore[j];
-            valore[j] += 10;
-            conPrestito[j] = true;
-            disegna();
-            passo.avviso.dici(zeri
-              ? 'Qui c\'è uno 0: il prestito arriva da più lontano. ' + Il(prima) + ' diventa ' + (prima - 1) +
-                ', ' + (zeri === 1 ? 'lo 0 diventa 9' : 'gli 0 diventano 9') + ' e ' + Q.il(vecchio) + ' diventa ' + valore[j] + '.'
-              : Il(prima) + ' diventa ' + (prima - 1) + ' e ' + Q.il(vecchio) + ' diventa ' + valore[j] + '.');
+            var spiegazione = faiPrestito(j);
             calcola(j);
+            passo.avviso.dici(spiegazione);
             passo.mostraPrestito(); // 1 decina aperta = 10 unità
           }
         );
+      }
+
+      // Il prestito: si cerca a sinistra la prima cifra che non è 0
+      function faiPrestito(j) {
+        var da = j - 1;
+        while (valore[da] === 0) da--;
+        var prima = valore[da];
+        var zeri = j - 1 - da;
+        for (var c = da; c < j; c++) {
+          valore[c] = c === da ? valore[c] - 1 : 9;
+          barrata[c] = true;
+        }
+        var vecchio = valore[j];
+        valore[j] += 10;
+        conPrestito[j] = true;
+        disegna();
+        return zeri
+          ? 'Qui c\'è uno 0: il prestito arriva da più lontano. ' + Il(prima) + ' diventa ' + (prima - 1) +
+            ', ' + (zeri === 1 ? 'lo 0 diventa 9' : 'gli 0 diventano 9') + ' e ' + Q.il(vecchio) + ' diventa ' + valore[j] + '.'
+          : Il(prima) + ' diventa ' + (prima - 1) + ' e ' + Q.il(vecchio) + ' diventa ' + valore[j] + '.';
+      }
+
+      // Semiguidato: si vede solo la colonna; il ragazzo decide da solo se serve il prestito
+      function semiguidato(j) {
+        var x = valore[j], y = cifra(es.b, ultima - j);
+        var nome = Q.COLONNA_DELLE[ultima - j];
+        function scritta() {
+          risultato[j] = String(valore[j] - y);
+          attesa = null;
+          disegna();
+          if (j === 0) termina(); else colonna(j - 1);
+        }
+        if (!opz.prestito) {
+          return passo.numero(['Colonna ' + nome + '.', 'Scrivi la cifra del risultato.'], x - y,
+            function () { return 'Non ancora. Fai ' + x + ' − ' + y + '.'; }, scritta, 'differenza');
+        }
+        passo.numeroOAzione(
+          ['Colonna ' + nome + '.', 'Scrivi la cifra del risultato. Se serve, chiedi il prestito.'],
+          x - y, x < y, 'Chiedi il prestito',
+          {
+            serveAzione: 'Qui ' + x + ' è più piccolo di ' + y + ': prima chiedi il prestito.',
+            nonServe: 'Qui il prestito non serve: ' + x + ' basta per togliere ' + y + '.',
+            cifra: function () { return 'Non ancora. Fai ' + x + ' − ' + y + '.'; }
+          },
+          scritta,
+          function () {
+            var spiegazione = faiPrestito(j);
+            semiguidato(j);
+            passo.avviso.dici(spiegazione);
+            passo.mostraPrestito();
+          },
+          'differenza');
+      }
+
+      // Da solo: il ragazzo scrive tutto il risultato (i prestiti li fa a mente o sul quaderno)
+      function daSolo() {
+        var diff = String(es.a - es.b);
+        var colonne = [];
+        for (var i = 0; i < diff.length; i++) colonne.push(ultima - i);
+        passo.liberi(['Scrivi il risultato.', 'Comincia dalle unità, a destra. Poi premi OK.'], colonne, diff.split('').reverse(),
+          function (valori, sbagliate, cursore) {
+            libero = { valori: valori, sbagliate: sbagliate, cursore: cursore };
+            disegna();
+          },
+          termina);
       }
 
       function calcola(j) {
@@ -173,7 +240,8 @@
             attesa = null;
             disegna();
             if (j === 0) termina(); else colonna(j - 1);
-          }
+          },
+          'differenza'
         );
       }
 
@@ -181,12 +249,13 @@
         // Gli 0 all'inizio del risultato non contano: si mostrano più chiari
         for (var c = 0; c < W - 1 && risultato[c] === '0'; c++) risultato[c] = { testo: '0', classi: ['zero-iniziale'] };
         colonnaAttiva = null;
+        if (libero) libero.cursore = null;
         disegna();
         passo.fine(['Hai finito!', 'Il risultato è ' + (es.a - es.b) + '.']);
         finito(passo.errori());
       }
 
-      colonna(ultima);
+      if (opz.guida === 'autonomo') daSolo(); else colonna(ultima);
     }
 
     k.sessione({
@@ -194,7 +263,10 @@
       genera: function () { return genera(opz); },
       chiave: function (es) { return es.a + '-' + es.b; },
       esegui: { colonna: esercizio },
-      scritta: function (es) { return es.a + ' − ' + es.b + ' = ' + (es.a - es.b); }
+      scritta: function (es) {
+        // Il collegamento con l'addizione: la sottrazione al contrario
+        return { operazione: es.a + ' − ' + es.b + ' = ' + (es.a - es.b), dopo: ['Al contrario: ' + (es.a - es.b) + ' + ' + es.b + ' = ' + es.a] };
+      }
     });
   }
 })();

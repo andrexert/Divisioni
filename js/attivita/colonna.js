@@ -44,6 +44,7 @@
     sfondo: 'img/sfondo-bosco.png',
     colore: '#8b5cf6',
     descrizione: 'Sul quaderno, un passo alla volta',
+    esercizi: [2, 3, 5],   // pochi, normali, tanti: le operazioni in colonna sono lunghe
     impostazioni: [
       { chiave: 'cifreDividendo', etichetta: 'Cifre del numero da dividere', predefinito: 2, opzioni: opzioniNumeriche([2, 3, 4]) },
       {
@@ -54,16 +55,7 @@
       {
         chiave: 'sottrazioni', etichetta: 'Scrivere le sottrazioni', predefinito: true,
         opzioni: [{ valore: true, testo: 'Sì (per imparare)' }, { valore: false, testo: 'No (metodo breve)' }]
-      },
-      {
-        chiave: 'tabellina', etichetta: 'Tabellina di aiuto', predefinito: 'errore',
-        opzioni: [
-          { valore: 'sempre', testo: 'Sempre' },
-          { valore: 'errore', testo: 'Dopo un errore' },
-          { valore: 'mai', testo: 'Mai' }
-        ]
-      },
-      { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 3, opzioni: opzioniNumeriche([2, 3, 5]) }
+      }
     ],
     // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
     livelli: [
@@ -74,21 +66,21 @@
       { nome: 'Anche con lo 0 nel risultato, fino a 4 cifre', imp: { cifreDividendo: 4, cifreDivisore: 1, conResto: true, evitaZeri: false } },
       { nome: 'Divisore a 2 cifre', imp: { cifreDividendo: 3, cifreDivisore: 2, conResto: true, evitaZeri: false } }
     ],
+    scheda: function (opz, quanti) {
+      var lista = [], ultima = '';
+      for (var i = 0; i < quanti; i++) {
+        var es = generaDivisione(opz, ultima);
+        ultima = es.dividendo + ':' + es.divisore;
+        var q = Math.floor(es.dividendo / es.divisore), r = es.dividendo % es.divisore;
+        lista.push({ tipo: 'divisione', a: es.dividendo, b: es.divisore, soluzione: es.dividendo + ' : ' + es.divisore + ' = ' + q + (r ? ' resto ' + r : '') });
+      }
+      return lista;
+    },
     avvia: avvia
   });
 
-  function avvia(area, opz, api) {
-    var el = api.el;
-    var indice = 0;
-    var alPrimoTentativo = 0;
-    var ultimaOperazione = '';
-
-    var barra = api.avanzamento(opz.numeroEsercizi);
-    var scena = el('div', { classe: 'scena' });
-    area.appendChild(barra.nodo);
-    area.appendChild(scena);
-
-    function genera() {
+  // Una divisione adatta alle impostazioni; "diversaDa" evita di ripetere l'ultima
+  function generaDivisione(opz, diversaDa) {
       var minDiv = opz.cifreDivisore === 1 ? 2 : 11;
       var maxDiv = opz.cifreDivisore === 1 ? 9 : 25;
       var minN = Math.pow(10, opz.cifreDividendo - 1);
@@ -104,11 +96,27 @@
         if (n < minN || n < d * 2) continue; // il risultato deve essere almeno 2
         // Ai primi livelli niente 0 nel risultato: è il caso più insidioso, arriva dopo
         if (opz.evitaZeri && String(Math.floor(n / d)).indexOf('0') >= 0) continue;
-        if (n + ':' + d === ultimaOperazione) continue;
-        ultimaOperazione = n + ':' + d;
+        if (n + ':' + d === diversaDa) continue;
         return { dividendo: n, divisore: d };
       }
       return { dividendo: 84, divisore: 3 }; // riserva: in pratica non serve mai
+  }
+
+  function avvia(area, opz, api) {
+    var el = api.el;
+    var indice = 0;
+    var alPrimoTentativo = 0;
+    var ultimaOperazione = '';
+
+    var barra = api.avanzamento(opz.numeroEsercizi);
+    var scena = el('div', { classe: 'scena' });
+    area.appendChild(barra.nodo);
+    area.appendChild(scena);
+
+    function genera() {
+      var es = generaDivisione(opz, ultimaOperazione);
+      ultimaOperazione = es.dividendo + ':' + es.divisore;
+      return es;
     }
 
     function prossimo() {
@@ -122,8 +130,12 @@
       esercizio(es, function (errori, resto) {
         if (errori === 0) alPrimoTentativo++;
         indice++;
-        var scritta = es.dividendo + ' : ' + es.divisore + ' = ' + Math.floor(es.dividendo / es.divisore) +
-          (resto ? ' resto ' + resto : '');
+        var q = Math.floor(es.dividendo / es.divisore);
+        // La prova della divisione, come si fa a scuola: quoziente per divisore (più il resto)
+        var scritta = {
+          operazione: es.dividendo + ' : ' + es.divisore + ' = ' + q + (resto ? ' resto ' + resto : ''),
+          dopo: ['La prova: ' + q + ' × ' + es.divisore + (resto ? ' + ' + resto : '') + ' = ' + es.dividendo]
+        };
         api.esito(scena, scritta, indice >= opz.numeroEsercizi, prossimo);
       });
     }
@@ -164,7 +176,7 @@
       scena.appendChild(avviso);
       scena.appendChild(tabellina);
 
-      if (opz.tabellina === 'sempre') mostraTabellina();
+      if (opz.aiutoTabellina === 'sempre') mostraTabellina();
 
       /* --- Tastiera numerica (stessa disposizione del telefono) --- */
 
@@ -207,15 +219,20 @@
           a.alGiusto();
         } else {
           errori++;
+          a.sbagli = (a.sbagli || 0) + 1;
+          if (api.errore) api.errore(a.tipoErrore || 'calcolo');
           api.suono('riprova');
-          avviso.dici(a.suggerimento(risposta));
-          if (opz.tabellina === 'errore') mostraTabellina();
+          var testo = a.suggerimento(risposta);
+          // Correzione: dopo due errori sullo stesso passo si mostra la risposta giusta
+          if (a.sbagli >= 2) testo += ' Guarda: la risposta giusta è ' + a.corretto + '. Ora scrivila tu.';
+          avviso.dici(testo);
+          if (opz.aiutoTabellina === 'errore') mostraTabellina();
           disegna();
         }
       }
 
       function mostraTabellina() {
-        if (opz.tabellina === 'mai' || !tabellina.hidden) return;
+        if (opz.aiutoTabellina === 'mai' || !tabellina.hidden) return;
         tabellina.hidden = false;
         tabellina.appendChild(el('p', { classe: 'tabellina-titolo', testo: 'Tabellina ' + del(d) }));
         var elenco = el('div', { classe: 'tabellina-elenco' });
@@ -258,6 +275,8 @@
         evidenziaDivisore = true;
         var giusto = valore >= d;
         consegna(Il(d) + ' sta ' + nel(valore) + '?');
+        var sbagliSiNo = 0;
+        var bottoniSiNo = null;
         function rispondi(si) {
           if (si === giusto) {
             api.suono('giusto');
@@ -272,6 +291,8 @@
             }
           } else {
             errori++;
+            if (api.errore) api.errore('ci-sta');
+            if (++sbagliSiNo >= 2 && bottoniSiNo) bottoniSiNo.children[giusto ? 0 : 1].classList.add('suggerito');
             api.suono('riprova');
             avviso.dici(giusto
               ? 'Guarda bene: ' + valore + ' è più grande di ' + d + ', quindi ' + il(d) + ' ci sta.'
@@ -285,10 +306,11 @@
           else return false;
           return true;
         };
-        mostraComandi(el('div', { classe: 'riga-bottoni' }, [
+        bottoniSiNo = el('div', { classe: 'riga-bottoni' }, [
           el('button', { type: 'button', classe: 'bottone grande', testo: 'Sì', onclick: function () { rispondi(true); } }),
           el('button', { type: 'button', classe: 'bottone grande', testo: 'No', onclick: function () { rispondi(false); } })
-        ]));
+        ]);
+        mostraComandi(bottoniSiNo);
         disegna();
       }
 
@@ -297,7 +319,7 @@
         evidenziaDivisore = true;
         var q = Math.floor(valore / d);
         chiediNumero('Quante volte ' + il(d) + ' sta ' + nel(valore) + '?', {
-          dove: 'quoziente', max: 1, corretto: q,
+          dove: 'quoziente', max: 1, corretto: q, tipoErrore: 'quante-volte',
           suggerimento: function (x) {
             var p = x * d;
             if (p > valore) return 'Troppo: ' + x + ' × ' + d + ' = ' + p + ', che è più di ' + valore + '.';
@@ -325,7 +347,7 @@
       function chiediProdotto(q) {
         var p = q * d;
         chiediNumero(['Quanto fa ' + q + ' × ' + d + '?', 'Scrivilo sotto ' + il(valore) + '.'], {
-          dove: 'riga', tipo: 'prodotto', fine: corrente.a, max: Math.min(corrente.a + 1, 4), corretto: p,
+          dove: 'riga', tipo: 'prodotto', tipoErrore: 'prodotto', fine: corrente.a, max: Math.min(corrente.a + 1, 4), corretto: p,
           suggerimento: function () { return 'Non ancora. Ripassa la tabellina ' + del(d) + '.'; },
           alGiusto: function () {
             righe.push({ testo: String(p), fine: corrente.a, tipo: 'prodotto' });
@@ -342,7 +364,7 @@
           ? 'Quanto fa ' + valore + ' − ' + p + '?'
           : ['Quanto avanza?', 'Fai ' + valore + ' − ' + q + ' × ' + d + '.'];
         chiediNumero(testo, {
-          dove: 'riga', tipo: 'resto', fine: corrente.a, max: Math.min(corrente.a + 1, 4), corretto: r,
+          dove: 'riga', tipo: 'resto', tipoErrore: 'differenza', fine: corrente.a, max: Math.min(corrente.a + 1, 4), corretto: r,
           suggerimento: function () {
             return opz.sottrazioni
               ? 'Non ancora. Conta da ' + p + ' fino a ' + valore + '.'
