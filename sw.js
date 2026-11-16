@@ -7,8 +7,9 @@
  * il browser scarica i file aggiornati e cancella la copia vecchia.
  *
  * Strategia "prima la copia locale": l'app si apre subito anche con una rete
- * lenta. La nuova versione entra in uso alla riapertura successiva, mai a
- * metà di un esercizio.
+ * lenta. Quando arriva una versione nuova, questo service worker la scarica
+ * e prende subito il controllo; app.js ricarica la pagina appena si è sul menu,
+ * mai a metà di un esercizio.
  */
 var VERSIONE = 'sviluppo';
 var FILE = ['./', 'index.html'];

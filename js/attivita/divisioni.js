@@ -58,11 +58,12 @@
     var quanti = t.femminile ? 'Quante ' : 'Quanti ';
     var rimasti = t.femminile ? 'rimaste' : 'rimasti';
     return {
+      // Due frasi distinte: prima che cosa fare, poi come farlo
       consegna: function (n, d) {
         return t.senzaImmagini
-          ? 'Dividi ' + n + ' pallini in ' + d + ' scatole. Tocca una scatola per metterci un pallino.'
-          : 'Dividi ' + n + ' ' + t.cibi + ' tra ' + d + ' ' + t.animali + '. ' +
-            'Tocca ' + t.un + ' ' + t.animale + ' per dargli ' + t.unCibo + ' ' + t.cibo + '.';
+          ? ['Dividi ' + n + ' pallini in ' + d + ' scatole.', 'Tocca una scatola per metterci un pallino.']
+          : ['Dividi ' + n + ' ' + t.cibi + ' tra ' + d + ' ' + t.animali + '.',
+            'Tocca ' + t.un + ' ' + t.animale + ' per dargli ' + t.unCibo + ' ' + t.cibo + '.'];
       },
       prima: t.senzaImmagini
         ? 'Prima metti un pallino nelle scatole che ne hanno di meno.'
@@ -137,6 +138,39 @@
     var nomeTema = opz.tema === 'animali' ? TEMI_ANIMALI[casuale(0, TEMI_ANIMALI.length - 1)] : opz.tema;
     var tema = TEMI[nomeTema];
     var testi = frasi(tema);
+
+    // Tastiera fisica: le cifre premono i tasti numerici sullo schermo.
+    // Se tra le risposte c'è il 10, dopo "1" si aspetta un attimo un eventuale "0".
+    var cifreDigitate = '';
+    var attesaCifra = null;
+    api.tastiera(function (tasto) {
+      if (!/^[0-9]$/.test(tasto)) return false;
+      var tastierini = scena.querySelectorAll('.tastierino');
+      var attivo = tastierini[tastierini.length - 1];
+      if (!attivo) return false;
+      var disponibili = Array.prototype.filter.call(attivo.querySelectorAll('.tasto'), function (b) { return !b.disabled; });
+      if (!disponibili.length) return false;
+      clearTimeout(attesaCifra);
+      cifreDigitate += tasto;
+      var esatto = null;
+      var piuLunghi = false;
+      disponibili.forEach(function (b) {
+        if (b.textContent === cifreDigitate) esatto = b;
+        else if (b.textContent.indexOf(cifreDigitate) === 0) piuLunghi = true;
+      });
+      if (esatto && !piuLunghi) {
+        cifreDigitate = '';
+        esatto.click();
+      } else if (piuLunghi) {
+        attesaCifra = setTimeout(function () {
+          cifreDigitate = '';
+          if (esatto && !esatto.disabled) esatto.click();
+        }, 800);
+      } else {
+        cifreDigitate = '';
+      }
+      return true;
+    });
 
     /* ---------- Elementi comuni ---------- */
 

@@ -1,19 +1,22 @@
 /*
  * Impariamo insieme — nucleo dell'applicazione.
  *
- * Gestisce il menu, le impostazioni (salvate nel browser), la voce e i suoni.
- * Ogni attività (divisioni, e in futuro altre) è un file separato in js/attivita/
- * che si registra con Impariamo.registra({...}). Vedi il README per i dettagli.
+ * Gestisce il menu, le impostazioni (salvate nel browser), la voce, i suoni,
+ * la tastiera fisica e gli sfondi. Ogni attività è un file separato in
+ * js/attivita/ che si registra con Impariamo.registra({...}). Vedi il README.
  *
- * Il codice è scritto in JavaScript "classico" (ES5) per funzionare anche
- * sulle versioni di Safari degli iMac più vecchi.
+ * Il codice è scritto in JavaScript "classico" (ES5) e usa solo funzioni
+ * disponibili da anni in tutti i browser: Safari anche vecchi (iMac, iPad),
+ * Chrome, Edge, Firefox, Chromebook, telefoni Android e iPhone.
  */
 (function () {
   'use strict';
 
   var CHIAVE_ARCHIVIO = 'impariamo.impostazioni.v1';
+  var CHIAVE_ULTIMA_SESSIONE = 'impariamo.ultima-sessione.v1';
   var SFONDO_MENU = 'img/sfondo-menu.png';
-  var DURATA_PRESSIONE_LUNGA = 1500; // millisecondi
+  var SFONDO_LARGHEZZA = 320, SFONDO_ALTEZZA = 192; // dimensioni originali degli sfondi
+  var PAROLA_DOCENTE = 'docente'; // da scrivere per aprire le impostazioni
 
   var SI_NO = [
     { valore: true, testo: 'Sì' },
@@ -34,14 +37,13 @@
 
   var elencoAttivita = [];
   var impostazioni = { generale: {} };
-  var contenuto, titolo, bottoneMenu, suggerimento;
+  var contenuto, titolo, bottoneMenu;
   var audioCtx = null;
-  var attivitaCorrente = null; // serve per mostrare la sua mascotte
-
-  function mascotte(classe) {
-    if (!attivitaCorrente || !attivitaCorrente.immagine) return null;
-    return el('img', { classe: classe, src: attivitaCorrente.immagine, alt: '', draggable: 'false' });
-  }
+  var voceItaliana = null;
+  var attivitaCorrente = null;  // serve per mostrare la sua mascotte
+  var gestoreTasti = null;      // l'attività in corso può ricevere i tasti premuti
+  var sulMenu = false;          // true quando si vede il menu principale
+  var aggiornamentoPronto = false;
 
   /* ---------- Utilità DOM ---------- */
 
@@ -65,7 +67,21 @@
     return nodo;
   }
 
-  /* ---------- Impostazioni ---------- */
+  function mascotte(classe) {
+    if (!attivitaCorrente || !attivitaCorrente.immagine) return null;
+    return el('img', { classe: classe, src: attivitaCorrente.immagine, alt: '', draggable: 'false' });
+  }
+
+  /* ---------- Archivio nel browser ---------- */
+
+  function leggi(chiave) {
+    try { return JSON.parse(window.localStorage.getItem(chiave)); } catch (e) { return null; }
+  }
+
+  function scrivi(chiave, valore) {
+    // Navigazione privata o archiviazione bloccata: il programma funziona comunque
+    try { window.localStorage.setItem(chiave, JSON.stringify(valore)); } catch (e) { /* niente */ }
+  }
 
   // Usa il valore salvato solo se è ancora tra le opzioni valide, altrimenti il predefinito
   function conValoriValidi(descrittori, salvati) {
@@ -78,23 +94,16 @@
   }
 
   function carica() {
-    var salvate = {};
-    try {
-      salvate = JSON.parse(window.localStorage.getItem(CHIAVE_ARCHIVIO)) || {};
-    } catch (e) {
-      salvate = {}; // navigazione privata o archiviazione bloccata: si usano i predefiniti
-    }
+    var salvate = leggi(CHIAVE_ARCHIVIO) || {};
     impostazioni.generale = conValoriValidi(IMPOSTAZIONI_GENERALI, salvate.generale);
     elencoAttivita.forEach(function (a) {
       impostazioni[a.id] = conValoriValidi(a.impostazioni || [], salvate[a.id]);
     });
   }
 
-  function salva() {
-    try {
-      window.localStorage.setItem(CHIAVE_ARCHIVIO, JSON.stringify(impostazioni));
-    } catch (e) { /* se non si può salvare, il programma funziona comunque */ }
-  }
+  function salva() { scrivi(CHIAVE_ARCHIVIO, impostazioni); }
+
+  /* ---------- Aspetto ---------- */
 
   function applicaAspetto() {
     var radice = document.documentElement;
@@ -111,7 +120,29 @@
     // Indirizzo assoluto: un url() relativo dentro una variabile CSS verrebbe
     // risolto rispetto al file CSS (css/) invece che rispetto alla pagina
     var assoluto = new URL(percorso, document.baseURI).href;
-    document.body.style.setProperty('--sfondo-immagine', 'url("' + assoluto + '")');
+    document.documentElement.style.setProperty('--sfondo-immagine', 'url("' + assoluto + '")');
+  }
+
+  // Lo sfondo in pixel art viene ingrandito di un numero intero di volte
+  // (2×, 3×, 4×...): così i pixel restano quadrati e nitidi su ogni schermo
+  function adattaSfondo() {
+    var scala = Math.max(1, Math.ceil(Math.max(
+      window.innerWidth / SFONDO_LARGHEZZA,
+      window.innerHeight / SFONDO_ALTEZZA
+    )));
+    document.documentElement.style.setProperty('--sfondo-dimensione',
+      (SFONDO_LARGHEZZA * scala) + 'px ' + (SFONDO_ALTEZZA * scala) + 'px');
+  }
+
+  // Alcuni Safari meno recenti (iPad con iOS 14.4 o precedente, Mac non aggiornati)
+  // non conoscono "gap" nei layout flessibili: in quel caso il CSS usa i margini
+  function controllaGapFlessibile() {
+    var prova = el('div', { style: 'display:flex;flex-direction:column;gap:1px;position:absolute;visibility:hidden' },
+      [el('div'), el('div')]);
+    document.body.appendChild(prova);
+    var supportato = prova.scrollHeight === 1;
+    document.body.removeChild(prova);
+    document.documentElement.classList.toggle('senza-gap', !supportato);
   }
 
   /* ---------- Voce e suoni ---------- */
@@ -125,6 +156,15 @@
       .replace(/\s=\s/g, ' fa ');
   }
 
+  // Molti browser (Safari in particolare) caricano l'elenco delle voci in ritardo:
+  // si cerca la voce italiana ora e di nuovo quando l'elenco è pronto
+  function cercaVoceItaliana() {
+    if (!('speechSynthesis' in window)) return;
+    var voci = window.speechSynthesis.getVoices().filter(function (v) { return /^it([-_]|$)/i.test(v.lang); });
+    voci.sort(function (a, b) { return (b.localService ? 1 : 0) - (a.localService ? 1 : 0); });
+    if (voci.length) voceItaliana = voci[0];
+  }
+
   function parla(testo) {
     if (!impostazioni.generale.voce || !('speechSynthesis' in window)) return;
     try {
@@ -132,8 +172,8 @@
       var frase = new window.SpeechSynthesisUtterance(aVoce(testo));
       frase.lang = 'it-IT';
       frase.rate = 0.9;
-      var voci = window.speechSynthesis.getVoices().filter(function (v) { return /^it/i.test(v.lang); });
-      if (voci.length) frase.voice = voci[0];
+      if (!voceItaliana) cercaVoceItaliana();
+      if (voceItaliana) frase.voice = voceItaliana;
       window.speechSynthesis.speak(frase);
     } catch (e) { /* voce non disponibile */ }
   }
@@ -168,20 +208,28 @@
     } catch (e) { /* audio non disponibile */ }
   }
 
-  // Riga con la consegna, detta dalla mascotte in un fumetto se l'attività ne ha una,
-  // e, se la voce è attiva, un bottone per riascoltarla
+  /* ---------- Elementi comuni alle attività ---------- */
+
+  // Consegna detta dalla mascotte in un fumetto. Può essere una frase sola o due:
+  // consegna(['Dividi 12 pesci tra 3 gattini.', 'Tocca un gattino per dargli un pesce.'])
+  // La prima riga dice che cosa fare, la seconda come: una frase, un'idea.
   function consegna(testo) {
+    var righe = typeof testo === 'string' ? [testo] : testo;
     var figura = mascotte('mascotte');
-    var riga = el('div', { classe: 'consegna' + (figura ? ' con-mascotte' : '') }, [
-      figura,
-      el('p', { classe: figura ? 'fumetto' : null, testo: testo })
-    ]);
+    var parti = [];
+    righe.forEach(function (r, i) {
+      if (i > 0) parti.push(' '); // spazio tra le frasi per i lettori di schermo
+      parti.push(el('span', { classe: i === 0 ? 'consegna-cosa' : 'consegna-come', testo: r }));
+    });
+    var fumetto = el('p', { classe: figura ? 'fumetto' : null }, parti);
+    var riga = el('div', { classe: 'consegna' + (figura ? ' con-mascotte' : '') }, [figura, fumetto]);
+    var tutto = righe.join(' ');
     if (impostazioni.generale.voce && 'speechSynthesis' in window) {
       riga.appendChild(el('button', {
         type: 'button', classe: 'bottone-ascolta', 'aria-label': 'Ascolta la consegna',
-        onclick: function () { parla(testo); }
-      }, ['🔊']));
-      parla(testo);
+        onclick: function () { parla(tutto); }
+      }, ['\uD83D\uDD0A']));
+      parla(tutto);
     }
     return riga;
   }
@@ -217,7 +265,7 @@
   function esito(contenitore, scritta, ultimo, alAvanti) {
     var avanti = el('button', {
       type: 'button', classe: 'bottone',
-      testo: ultimo ? 'Fine' : 'Avanti →',
+      testo: ultimo ? 'Fine' : 'Avanti \u2192',
       onclick: alAvanti
     });
     var riquadro = el('div', { classe: 'esito' }, [
@@ -234,10 +282,21 @@
     parla('Esatto! ' + scritta);
   }
 
+  /* ---------- Tastiera fisica ---------- */
+
+  // Un solo ascoltatore per tutta l'app: inoltra i tasti all'attività in corso.
+  // Il gestore restituisce true se ha usato il tasto (che allora non fa altro).
+  function alTastoPremuto(e) {
+    if (!gestoreTasti || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (gestoreTasti(e.key)) e.preventDefault();
+  }
+
   /* ---------- Schermate ---------- */
 
   function pulisci(nuovoTitolo, mostraBottoneMenu) {
+    sulMenu = false;
     zittisci();
+    gestoreTasti = null;
     contenuto.innerHTML = '';
     contenuto.style.removeProperty('--colore-attivita');
     impostaSfondo(SFONDO_MENU);
@@ -246,8 +305,17 @@
     window.scrollTo(0, 0);
   }
 
+  function preparaAttivita(a) {
+    attivitaCorrente = a;
+    if (a.colore) contenuto.style.setProperty('--colore-attivita', a.colore);
+    if (a.sfondo) impostaSfondo(a.sfondo);
+  }
+
   function mostraMenu() {
+    // Una versione nuova scaricata mentre si lavorava entra in uso tornando al menu
+    if (aggiornamentoPronto) { window.location.reload(); return; }
     pulisci('Impariamo insieme', false);
+    sulMenu = true;
     attivitaCorrente = null;
     contenuto.appendChild(el('div', { classe: 'consegna' }, [el('p', { testo: 'Scegli che cosa vuoi fare.' })]));
     var griglia = el('div', { classe: 'menu' });
@@ -270,9 +338,7 @@
 
   function avviaAttivita(a) {
     pulisci(a.titolo, true);
-    attivitaCorrente = a;
-    if (a.colore) contenuto.style.setProperty('--colore-attivita', a.colore);
-    if (a.sfondo) impostaSfondo(a.sfondo);
+    preparaAttivita(a);
     var area = el('div', { classe: 'area-attivita' });
     contenuto.appendChild(area);
     a.avvia(area, impostazioni[a.id], {
@@ -283,38 +349,52 @@
       messaggio: messaggio,
       avanzamento: avanzamento,
       esito: esito,
-      fine: function (esito) { mostraFine(a, esito); }
+      tastiera: function (gestore) { gestoreTasti = gestore; },
+      fine: function (risultato) { mostraFine(a, risultato); }
     });
   }
 
-  function mostraFine(a, esito) {
+  function mostraFine(a, risultato) {
+    // Il resoconto è per il docente: si salva e si legge nelle impostazioni,
+    // così il ragazzo vede solo "Finito!" e non un eventuale "0 su 5"
+    scrivi(CHIAVE_ULTIMA_SESSIONE, {
+      attivita: a.titolo,
+      totale: risultato.totale,
+      alPrimoTentativo: risultato.alPrimoTentativo,
+      quando: new Date().toISOString()
+    });
     pulisci(a.titolo, true);
+    preparaAttivita(a);
     var ancora = el('button', { type: 'button', classe: 'bottone', testo: 'Ancora', onclick: function () { avviaAttivita(a); } });
-    attivitaCorrente = a;
-    if (a.colore) contenuto.style.setProperty('--colore-attivita', a.colore);
-    if (a.sfondo) impostaSfondo(a.sfondo);
     contenuto.appendChild(el('div', { classe: 'fine' }, [
       mascotte('mascotte-grande'),
       el('p', { classe: 'fine-grande', testo: 'Finito!' }),
-      el('p', { testo: 'Hai completato ' + esito.totale + ' esercizi. Ottimo lavoro.' }),
+      el('p', { testo: 'Hai completato ' + risultato.totale + ' esercizi. Ottimo lavoro.' }),
       el('div', { classe: 'riga-bottoni' }, [
         ancora,
         el('button', { type: 'button', classe: 'bottone secondario', testo: 'Torna al menu', onclick: mostraMenu })
-      ]),
-      el('p', {
-        classe: 'nota-docente',
-        testo: 'Per il docente: ' + esito.alPrimoTentativo + ' su ' + esito.totale + ' risolti al primo tentativo.'
-      })
+      ])
     ]));
     ancora.focus();
     parla('Finito! Ottimo lavoro.');
   }
 
+  function testoUltimaSessione() {
+    var u = leggi(CHIAVE_ULTIMA_SESSIONE);
+    if (!u || !u.attivita) return 'Ultima sessione: nessuna ancora su questo dispositivo.';
+    var data = new Date(u.quando);
+    var quando = isNaN(data.getTime()) ? '' : ' (' + data.toLocaleDateString('it-IT') + ', ' +
+      data.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) + ')';
+    return 'Ultima sessione su questo dispositivo' + quando + ': ' + u.attivita + ', ' +
+      u.alPrimoTentativo + ' esercizi su ' + u.totale + ' risolti al primo tentativo.';
+  }
+
   function mostraImpostazioni() {
     pulisci('Impostazioni', true);
+    contenuto.appendChild(el('p', { classe: 'riepilogo-docente', testo: testoUltimaSessione() }));
     contenuto.appendChild(el('p', {
       classe: 'nota-docente',
-      testo: 'Le impostazioni si salvano da sole, solo su questo computer e in questo browser. Nessun dato viene inviato in rete.'
+      testo: 'Le impostazioni si salvano da sole, solo su questo dispositivo e in questo browser. Nessun dato viene inviato in rete.'
     }));
     contenuto.appendChild(sezioneImpostazioni('Generali', IMPOSTAZIONI_GENERALI, impostazioni.generale));
     elencoAttivita.forEach(function (a) {
@@ -354,39 +434,41 @@
     return sezione;
   }
 
-  /* ---------- Accesso docente: pressione lunga sull'ingranaggio ---------- */
+  /* ---------- Accesso docente ---------- */
 
-  function collegaPressioneLunga(bottone, azione) {
-    var timer = null;
-
-    function inizia(e) {
-      if (e.button !== undefined && e.button !== 0) return;
-      bottone.classList.add('in-pressione');
-      timer = setTimeout(function () {
-        timer = null;
-        bottone.classList.remove('in-pressione');
-        azione();
-      }, DURATA_PRESSIONE_LUNGA);
-    }
-
-    function annulla() {
-      if (!timer) return;
-      clearTimeout(timer);
-      timer = null;
-      bottone.classList.remove('in-pressione');
-      suggerimento.textContent = 'Tieni premuto per le impostazioni';
-      setTimeout(function () { suggerimento.textContent = ''; }, 2500);
-    }
-
-    bottone.addEventListener('pointerdown', inizia);
-    bottone.addEventListener('pointerup', annulla);
-    bottone.addEventListener('pointerleave', annulla);
-    bottone.addEventListener('pointercancel', annulla);
-    bottone.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-    // Da tastiera (Invio o Spazio) si apre subito: serve al docente e all'accessibilità
-    bottone.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); azione(); }
+  // L'ingranaggio apre una piccola schermata che chiede di scrivere una parola:
+  // per un adulto è immediato, per un ragazzo che clicca per curiosità è un ostacolo
+  // sufficiente. Non è una protezione di sicurezza (la parola è scritta nel README):
+  // serve solo a evitare che le impostazioni cambino per sbaglio.
+  function mostraAccessoDocente() {
+    pulisci('Area docente', true);
+    var campo = el('input', {
+      type: 'text', id: 'parola-docente', classe: 'campo-parola',
+      autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false',
+      'aria-describedby': 'spiegazione-docente'
     });
+    var avviso = messaggio();
+    var modulo = el('form', { classe: 'accesso-docente', novalidate: true }, [
+      el('p', { id: 'spiegazione-docente', testo: 'Per aprire le impostazioni, scrivi la parola DOCENTE.' }),
+      el('label', { classe: 'etichetta-nascosta', 'for': 'parola-docente', testo: 'Parola' }),
+      campo,
+      avviso,
+      el('div', { classe: 'riga-bottoni' }, [
+        el('button', { type: 'submit', classe: 'bottone', testo: 'Apri le impostazioni' }),
+        el('button', { type: 'button', classe: 'bottone secondario', testo: 'Annulla', onclick: mostraMenu })
+      ])
+    ]);
+    modulo.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (campo.value.trim().toLowerCase() === PAROLA_DOCENTE) {
+        mostraImpostazioni();
+      } else {
+        avviso.textContent = 'La parola non è giusta. Scrivi DOCENTE.';
+        campo.select();
+      }
+    });
+    contenuto.appendChild(modulo);
+    campo.focus();
   }
 
   /* ---------- Avvio ---------- */
@@ -395,12 +477,21 @@
     contenuto = document.getElementById('contenuto');
     titolo = document.getElementById('titolo');
     bottoneMenu = document.getElementById('btn-menu');
-    suggerimento = document.getElementById('suggerimento');
 
     carica();
     applicaAspetto();
+    controllaGapFlessibile();
+    adattaSfondo();
+    window.addEventListener('resize', adattaSfondo);
+    document.addEventListener('keydown', alTastoPremuto);
+    if ('speechSynthesis' in window) {
+      cercaVoceItaliana();
+      if (window.speechSynthesis.addEventListener) {
+        window.speechSynthesis.addEventListener('voiceschanged', cercaVoceItaliana);
+      }
+    }
     bottoneMenu.addEventListener('click', mostraMenu);
-    collegaPressioneLunga(document.getElementById('btn-impostazioni'), mostraImpostazioni);
+    document.getElementById('btn-impostazioni').addEventListener('click', mostraAccessoDocente);
     mostraMenu();
     registraServiceWorker();
   }
@@ -408,9 +499,24 @@
   // Funzionamento senza rete: solo quando l'app è pubblicata su un sito (https).
   // Aprendo index.html con un doppio clic (file://) i service worker non esistono
   // e il programma funziona comunque, leggendo i file dal disco.
+  //
+  // Aggiornamenti: a ogni apertura il browser controlla se è uscita una versione
+  // nuova e, se sì, la scarica in sottofondo. Appena è pronta, l'app si ricarica
+  // da sola se si è sul menu; se un ragazzo sta lavorando, aspetta che torni al
+  // menu, così un esercizio non viene mai interrotto. Se l'app resta aperta a
+  // lungo (per esempio tutta la mattina), il controllo si ripete ogni mezz'ora.
   function registraServiceWorker() {
     if (!('serviceWorker' in navigator) || window.location.protocol === 'file:') return;
-    navigator.serviceWorker.register('sw.js').catch(function () { /* senza copia offline */ });
+    var avevaGiaUnaVersione = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      // Alla prima visita non c'è nulla da aggiornare: la pagina è già quella giusta
+      if (!avevaGiaUnaVersione) { avevaGiaUnaVersione = true; return; }
+      aggiornamentoPronto = true;
+      if (sulMenu) window.location.reload();
+    });
+    navigator.serviceWorker.register('sw.js').then(function (registrazione) {
+      setInterval(function () { registrazione.update().catch(function () { /* offline */ }); }, 30 * 60 * 1000);
+    }).catch(function () { /* senza copia offline */ });
   }
 
   window.Impariamo = {

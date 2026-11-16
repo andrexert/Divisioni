@@ -2,13 +2,15 @@
 
 Un piccolo programma didattico per ragazzi nello spettro autistico. Per ora contiene due attività, le **divisioni con gli oggetti** e le **divisioni in colonna**, ma è pensato per aggiungerne altre nel tempo.
 
-È una **web app installabile** (PWA): si apre da un indirizzo web, si può installare con la sua icona e, dopo la prima apertura, funziona anche senza connessione. Non raccoglie dati: le uniche informazioni salvate sono le impostazioni scelte dal docente, che restano nel browser del computer che si sta usando (`localStorage`).
+È una **web app installabile** (PWA): si apre da un indirizzo web, si può installare con la sua icona e, dopo la prima apertura, funziona anche senza connessione. Non raccoglie dati: le uniche informazioni salvate sono le impostazioni scelte dal docente, che restano nel browser del dispositivo che si sta usando (`localStorage`), insieme a un piccolo resoconto dell'ultima sessione per il docente (attività e numero di esercizi risolti al primo tentativo, senza nomi).
+
+Funziona su **qualsiasi dispositivo con un browser recente**: Mac (anche gli iMac Late 2013 con Safari su Big Sur), PC Windows, Chromebook, iPad e tablet Android, iPhone e telefoni Android. Si usa con il mouse, con il touch o con la tastiera, e la pagina si adatta allo schermo: sui telefoni il quaderno a quadretti si restringe fino a starci per intero.
 
 ## Come si usa
 
 ### Online (consigliato)
 
-L'app si pubblica con **GitHub Pages**. Ogni modifica al branch `main` viene pubblicata automaticamente dal workflow `.github/workflows/pubblica.yml`, e i computer ricevono la versione nuova alla riapertura successiva dell'app, mai a metà di un esercizio.
+L'app si pubblica con **GitHub Pages**. Ogni modifica al branch `main` viene pubblicata automaticamente dal workflow `.github/workflows/pubblica.yml`, in un paio di minuti. Ogni dispositivo controlla gli aggiornamenti a ogni apertura e, se l'app resta aperta, ogni mezz'ora. Quando trova una versione nuova la scarica in sottofondo e si ricarica da sola appena si è sul menu: se un ragazzo sta facendo un esercizio, aspetta che torni al menu, così il lavoro non viene mai interrotto.
 
 Configurazione, da fare una volta sola:
 
@@ -16,10 +18,14 @@ Configurazione, da fare una volta sola:
 2. In *Settings → Pages → Build and deployment → Source* scegliere **GitHub Actions**.
 3. Unire il lavoro nel branch `main`: il workflow pubblica e mostra l'indirizzo, del tipo `https://<utente>.github.io/<repository>/`.
 
-Sugli iMac:
+Come averla "come un'app", con l'icona della volpe:
 
-- **Safari** (anche sugli iMac Late 2013 con macOS Big Sur): basta aprire l'indirizzo. Dopo la prima apertura funziona anche senza rete. Per avere un'icona, si trascina il link dalla barra degli indirizzi nella parte destra del Dock. "Aggiungi al Dock" come vera app esiste solo da macOS Sonoma (Safari 17).
-- **Chrome / Edge**: dal menu, *Installa Impariamo insieme*. L'app si apre in una finestra sua, con l'icona della volpe nel Dock e nel Launchpad.
+- **Mac con Safari**: da macOS Sonoma, *File → Aggiungi al Dock*. Sulle versioni precedenti (iMac Late 2013 con Big Sur) si trascina il link dalla barra degli indirizzi nella parte destra del Dock.
+- **Windows, Mac o Chromebook con Chrome o Edge**: dal menu del browser, *Installa Impariamo insieme* (o *Installa questo sito come app*). Si apre in una finestra sua.
+- **iPad e iPhone**: in Safari, *Condividi → Aggiungi alla schermata Home*.
+- **Tablet e telefoni Android**: in Chrome, menu *⋮ → Installa app* (o *Aggiungi a schermata Home*).
+
+In tutti i casi, dopo la prima apertura l'app funziona anche senza rete.
 
 ### Senza Internet e senza pubblicare
 
@@ -29,11 +35,11 @@ Si può ancora aprire `index.html` con un doppio clic, copiando l'intera cartell
 
 `sw.js` è un *service worker*: uno script che il browser installa alla prima visita e che conserva una copia di tutti i file. Al momento della pubblicazione, `tools/prepara_sito.py` scrive nel service worker l'elenco completo dei file e una versione (l'hash del commit). Quando la versione cambia, il browser scarica i file nuovi e cancella la copia vecchia. Lo script controlla anche che ogni immagine citata nel codice esista davvero, così un file dimenticato blocca la pubblicazione invece di rompere l'app offline.
 
-Il programma è scritto in JavaScript "classico" (ES5), senza librerie né compilazione, così funziona anche con le versioni di Safari degli iMac Late 2013 (macOS Big Sur al massimo).
+Il programma è scritto in JavaScript "classico" (ES5), senza librerie né compilazione, e usa solo funzioni disponibili da anni in tutti i browser. Per i Safari meno recenti (iPad con iOS 14.4 o precedente, Mac non aggiornati) c'è un'alternativa per gli spazi tra gli elementi, che quei browser non gestiscono nei layout flessibili.
 
 ### Impostazioni per il docente
 
-Le impostazioni si aprono **tenendo premuto** l'ingranaggio in alto a destra per un secondo e mezzo: così un ragazzo che ci clicca per sbaglio non ci entra. Dalla tastiera si aprono anche con Invio.
+Le impostazioni si aprono dall'ingranaggio in alto a destra: si apre l'**Area docente**, dove bisogna scrivere la parola **DOCENTE** (maiuscole o minuscole non contano). Non è una protezione di sicurezza, visto che la parola è scritta qui, ma basta perché un ragazzo che clicca per curiosità non cambi le impostazioni per sbaglio. Nella prima pagina delle impostazioni c'è il **resoconto dell'ultima sessione** su quel dispositivo: è lì, e non alla fine degli esercizi, perché un ragazzo che legge "0 su 5" dopo aver finito può viverla male.
 
 Sono disponibili:
 
@@ -63,7 +69,7 @@ La divisione è scritta su un foglio a quadretti, con ogni cifra nel suo quadret
 
 Se dopo aver abbassato una cifra il divisore non ci sta, si scrive 0 nel risultato e si abbassa la cifra successiva, come si fa a scuola.
 
-Il numero su cui si sta lavorando è sempre evidenziato. Le cifre abbassate sono colorate e, nel dividendo, una freccina segna quelle già usate. Le risposte si scrivono con una tastiera numerica sullo schermo (cifre, cancella, OK).
+Il numero su cui si sta lavorando è sempre evidenziato. Le cifre abbassate sono colorate e, nel dividendo, una freccina segna quelle già usate. Le risposte si scrivono con una tastiera numerica sullo schermo (cifre, cancella, OK) oppure con la tastiera del computer: cifre, Backspace e Invio; S e N per rispondere Sì o No; Invio per abbassare la cifra e per andare avanti.
 
 Gli errori ricevono un suggerimento mirato. Se la risposta a "quante volte" è troppo grande compare "Troppo: 9 × 3 = 27, che è più di 26"; se è troppo piccola, compare quanto avanza e che basta per un altro divisore. La tabellina del divisore può essere sempre visibile, comparire dopo il primo errore oppure mai.
 
@@ -78,17 +84,39 @@ Il programma segue alcuni principi pensati per i ragazzi nello spettro autistico
 - Colori vivaci ma con un ruolo fisso: blu per ciò che si tocca, arancione per gli oggetti da contare, giallo evidenziatore per il numero su cui si lavora, verde per la risposta giusta. Per chi è sensibile agli stimoli visivi c'è la tavolozza "tenui". I suoni sono disattivati di default.
 - Gli errori non vengono segnalati con il rosso o con una X. Il numero sbagliato si spegne e compare un suggerimento concreto ("Conta i pallini dentro una scatola"), così il ragazzo non ripete lo stesso tentativo.
 - Il feedback positivo è sempre lo stesso ("Esatto!") e ripete l'operazione completa, per renderlo prevedibile.
-- Le risposte si danno con bottoni grandi, senza tastiera.
-
-Alla fine della sessione compare una piccola nota per il docente con il numero di esercizi risolti al primo tentativo.
+- Le consegne hanno una frase per idea: prima *che cosa* fare (in evidenza), poi *come*.
+- Nelle ciotole il cibo è sempre disposto in righe da 5, come nelle griglie da dieci usate a scuola: 7 si legge "5 e 2" a colpo d'occhio. Tutte le ciotole hanno la stessa larghezza, piene o vuote.
+- Le risposte si danno con bottoni grandi; chi preferisce può usare la tastiera del computer.
 
 ## Immagini
 
-Gli animali e le mascotte (la volpe per le divisioni, il gufo per le divisioni in colonna) sono in pixel art, generati con [PixelLab](https://www.pixellab.ai/) e salvati come PNG nella cartella `img/`. Il programma non contatta PixelLab né altri servizi: le immagini sono file normali, quindi tutto continua a funzionare offline e non serve alcuna chiave API. Le immagini del cibo sono state ritagliate a 25×25 pixel e vengono mostrate al doppio della dimensione. Gli animali (64×64) sono mostrati a 128 o 64 pixel. Si usano sempre multipli esatti con `image-rendering: pixelated`, così i pixel restano nitidi.
+Gli animali e le mascotte (la volpe per le divisioni, il gufo per le divisioni in colonna) sono in pixel art, generati con [PixelLab](https://www.pixellab.ai/) e salvati come PNG nella cartella `img/`. Il programma non contatta PixelLab né altri servizi: le immagini sono file normali, quindi tutto continua a funzionare offline e non serve alcuna chiave API. Le immagini del cibo sono state ritagliate a 25×25 pixel e vengono mostrate al doppio della dimensione (a grandezza naturale sui telefoni, dove gli schermi sono più densi). Gli animali (64×64) sono mostrati a 128 o 64 pixel, e anche gli sfondi (320×192) vengono ingranditi di un numero intero di volte. Si usano sempre multipli esatti con `image-rendering: pixelated`, così i pixel restano nitidi.
 
 Ogni schermata ha uno sfondo in pixel art: colline per il menu, un prato per le divisioni con gli animali, un bosco al tramonto per il gufo delle divisioni in colonna. Il lavoro sta sempre su un pannello chiaro al centro, così lo sfondo resta ai margini e non disturba. Gli sfondi si possono spegnere dalle impostazioni e si spengono da soli con i colori tenui o con l'alto contrasto, perché in quei casi l'obiettivo è ridurre gli stimoli visivi.
 
 Per aggiungere nuovi temi basta mettere in `img/` un animale e un cibo con lo stesso nome usato in `TEMI` dentro `js/attivita/divisioni.js`.
+
+## Test automatici
+
+`tests/esegui.js` è un "alunno automatico" che usa l'app su cinque dispositivi simulati: computer con Chrome, computer con Safari (WebKit, lo stesso motore), iPhone, iPad e telefono Android. Gioca tutti i temi delle divisioni con gli oggetti e le divisioni in colonna con impostazioni diverse, sbaglia apposta per provare i suggerimenti, usa anche solo la tastiera e controlla che la pagina non esca mai dai bordi dello schermo. `tests/pwa.js` controlla che la web app sia installabile e funzioni senza rete.
+
+I test girano da soli su GitHub a ogni pull request (`.github/workflows/verifica.yml`): se qualcosa non va, si vede prima che la modifica vada online. Per lanciarli sul proprio computer servono Node.js e Python 3:
+
+```
+npm install
+npx playwright install chromium webkit
+npm test
+```
+
+### Prova su un dispositivo vero (5 minuti)
+
+I test automatici simulano i dispositivi ma non li sostituiscono del tutto. Quando si cambia qualcosa di importante, conviene provare su almeno un iMac e un tablet:
+
+1. Aprire l'indirizzo: compaiono il menu, la volpe, il gufo e lo sfondo con le colline.
+2. Divisioni: distribuire il cibo toccando gli animali, rispondere una volta sbagliato e una giusto.
+3. Divisioni in colonna: fare un esercizio intero; sul computer provare anche a scrivere con la tastiera.
+4. Impostazioni (ingranaggio, poi scrivere DOCENTE): attivare la lettura vocale e controllare che la voce sia italiana.
+5. Staccare il Wi-Fi e ricaricare: l'app deve funzionare lo stesso.
 
 ## Struttura dei file
 
@@ -97,10 +125,11 @@ index.html                  pagina principale
 manifest.webmanifest        nome, icona e colori della web app installabile
 sw.js                       service worker: funzionamento senza rete
 tools/prepara_sito.py       prepara la cartella da pubblicare (_site)
-.github/workflows/          pubblicazione automatica su GitHub Pages
+tests/                      test automatici (alunno automatico, web app offline)
+.github/workflows/          pubblicazione su GitHub Pages e test a ogni pull request
 img/                        immagini in pixel art (animali, cibo, mascotte)
 css/stile.css               aspetto grafico (colori, dimensioni, alto contrasto)
-js/app.js                   nucleo: menu, impostazioni, voce, suoni
+js/app.js                   nucleo: menu, impostazioni, voce, suoni, tastiera, sfondi
 js/attivita/divisioni.js    attività "Divisioni" (con gli oggetti)
 js/attivita/colonna.js      attività "Divisioni in colonna"
 ```
@@ -125,9 +154,10 @@ Impariamo.registra({
   avvia: function (area, opz, api) {
     // area: elemento in cui disegnare l'attività
     // opz:  impostazioni correnti, per esempio opz.max
-    // api:  el(), consegna(testo), messaggio(), avanzamento(totale),
+    // api:  el(), consegna(testo o [cosa, come]), messaggio(), avanzamento(totale),
     //       esito(contenitore, scritta, ultimo, alAvanti), parla(testo),
-    //       suono('giusto'|'riprova'), fine({ totale, alPrimoTentativo })
+    //       suono('giusto'|'riprova'), tastiera(function (tasto) { ... return true se usato }),
+    //       fine({ totale, alPrimoTentativo })
   }
 });
 ```

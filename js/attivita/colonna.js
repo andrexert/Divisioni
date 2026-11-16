@@ -137,6 +137,11 @@
 
       var zonaConsegna = el('div');
       var lavagna = el('div', { classe: 'colonna-lavagna', 'aria-hidden': 'true' });
+      // Quadretti in larghezza: margine + segno + dividendo + parte destra + margine.
+      // Il foglio di stile li usa per restringere il quaderno sugli schermi piccoli.
+      var celleDestra = Math.max(3, String(d).length, n - String(d).length + 2);
+      lavagna.style.setProperty('--destra', celleDestra);
+      lavagna.style.setProperty('--colonne', 1 + (n + 1) + celleDestra + 1);
       var comandi = el('div', { classe: 'colonna-comandi' });
       var avviso = api.messaggio();
       var tabellina = el('div', { classe: 'tabellina', hidden: true });
@@ -160,6 +165,11 @@
           onclick: function () { premi(k); }
         }));
       });
+
+      // Tastiera fisica: cifre, Cancella e Invio per i numeri; S e N per Sì e No;
+      // Invio o Spazio per abbassare la cifra. Funziona solo quando serve.
+      var tastiFisici = null;
+      api.tastiera(function (tasto) { return tastiFisici ? tastiFisici(tasto) : false; });
 
       function premi(k) {
         if (!attesa) return;
@@ -216,6 +226,13 @@
       function chiediNumero(testo, impostazioni) {
         attesa = impostazioni;
         input = '';
+        tastiFisici = function (tasto) {
+          if (/^[0-9]$/.test(tasto)) premi(tasto);
+          else if (tasto === 'Backspace' || tasto === 'Delete') premi('canc');
+          else if (tasto === 'Enter') premi('ok');
+          else return false;
+          return true;
+        };
         consegna(testo);
         mostraComandi(tastiera);
         disegna();
@@ -248,6 +265,13 @@
               : 'Guarda bene: ' + valore + ' è più piccolo di ' + d + ', quindi ' + il(d) + ' non ci sta.');
           }
         }
+        tastiFisici = function (tasto) {
+          var t = tasto.toLowerCase();
+          if (t === 's') rispondi(true);
+          else if (t === 'n') rispondi(false);
+          else return false;
+          return true;
+        };
         mostraComandi(el('div', { classe: 'riga-bottoni' }, [
           el('button', { type: 'button', classe: 'bottone grande', testo: 'Sì', onclick: function () { rispondi(true); } }),
           el('button', { type: 'button', classe: 'bottone grande', testo: 'No', onclick: function () { rispondi(false); } })
@@ -287,7 +311,7 @@
       // Passo 3: quanto fa la cifra trovata per il divisore? Si scrive sotto
       function chiediProdotto(q) {
         var p = q * d;
-        chiediNumero('Quanto fa ' + q + ' × ' + d + '? Scrivilo sotto ' + il(valore) + '.', {
+        chiediNumero(['Quanto fa ' + q + ' × ' + d + '?', 'Scrivilo sotto ' + il(valore) + '.'], {
           dove: 'riga', tipo: 'prodotto', fine: corrente.a, max: Math.min(corrente.a + 1, 4), corretto: p,
           suggerimento: function () { return 'Non ancora. Ripassa la tabellina ' + del(d) + '.'; },
           alGiusto: function () {
@@ -303,7 +327,7 @@
         var r = valore - p;
         var testo = opz.sottrazioni
           ? 'Quanto fa ' + valore + ' − ' + p + '?'
-          : 'Quanto avanza? Fai ' + valore + ' − ' + q + ' × ' + d + '.';
+          : ['Quanto avanza?', 'Fai ' + valore + ' − ' + q + ' × ' + d + '.'];
         chiediNumero(testo, {
           dove: 'riga', tipo: 'resto', fine: corrente.a, max: Math.min(corrente.a + 1, 4), corretto: r,
           suggerimento: function () {
@@ -328,7 +352,7 @@
         attesa = null;
         evidenziaDivisore = false;
         consegna('Abbassa ' + il(Number(cifra)) + '.');
-        mostraComandi(el('button', {
+        var bottoneAbbassa = el('button', {
           type: 'button', classe: 'bottone grande',
           testo: 'Abbassa ' + il(Number(cifra)) + ' ↓',
           onclick: function () {
@@ -342,17 +366,24 @@
             avviso.dici('');
             chiediQuanteVolte();
           }
-        }));
+        });
+        tastiFisici = function (tasto) {
+          if (tasto !== 'Enter' && tasto !== ' ') return false;
+          bottoneAbbassa.click();
+          return true;
+        };
+        mostraComandi(bottoneAbbassa);
         disegna();
       }
 
       function termina(resto) {
         attesa = null;
+        tastiFisici = null;
         evidenziaDivisore = false;
         corrente = { riga: -1, da: 0, a: -1 };
         consegna(resto === 0
-          ? 'Hai finito! Non avanza niente: il resto è 0.'
-          : 'Hai finito! Avanza ' + resto + ': è il resto.');
+          ? ['Hai finito!', 'Non avanza niente: il resto è 0.']
+          : ['Hai finito!', 'Avanza ' + resto + ': è il resto.']);
         mostraComandi(null);
         disegna();
         finito(errori, resto);

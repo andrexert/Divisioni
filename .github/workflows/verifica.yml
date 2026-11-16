@@ -1,0 +1,36 @@
+# Fa girare i test automatici a ogni pull request: un "alunno automatico" usa
+# l'app su computer (Chrome e Safari/WebKit), iPhone, iPad e telefono Android,
+# poi si controlla la web app installabile e il funzionamento senza rete.
+# Se qualcosa non va, la pull request lo mostra prima di andare online.
+name: Verifica
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Installa Playwright e i browser (Chrome e WebKit, il motore di Safari)
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium webkit
+
+      - name: Test su computer, iPhone, iPad e Android
+        run: node tests/esegui.js
+        env:
+          RICHIEDI_TUTTI: "1"
+
+      - name: Test della web app installabile e offline
+        run: node tests/pwa.js
