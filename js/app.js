@@ -34,6 +34,12 @@
   var impostazioni = { generale: {} };
   var contenuto, titolo, bottoneMenu, suggerimento;
   var audioCtx = null;
+  var attivitaCorrente = null; // serve per mostrare la sua mascotte
+
+  function mascotte(classe) {
+    if (!attivitaCorrente || !attivitaCorrente.immagine) return null;
+    return el('img', { classe: classe, src: attivitaCorrente.immagine, alt: '', draggable: 'false' });
+  }
 
   /* ---------- Utilità DOM ---------- */
 
@@ -149,9 +155,14 @@
     } catch (e) { /* audio non disponibile */ }
   }
 
-  // Riga con la consegna e, se la voce è attiva, un bottone per riascoltarla
+  // Riga con la consegna, detta dalla mascotte in un fumetto se l'attività ne ha una,
+  // e, se la voce è attiva, un bottone per riascoltarla
   function consegna(testo) {
-    var riga = el('div', { classe: 'consegna' }, [el('p', { testo: testo })]);
+    var figura = mascotte('mascotte');
+    var riga = el('div', { classe: 'consegna' + (figura ? ' con-mascotte' : '') }, [
+      figura,
+      el('p', { classe: figura ? 'fumetto' : null, testo: testo })
+    ]);
     if (impostazioni.generale.voce && 'speechSynthesis' in window) {
       riga.appendChild(el('button', {
         type: 'button', classe: 'bottone-ascolta', 'aria-label': 'Ascolta la consegna',
@@ -197,7 +208,10 @@
       onclick: alAvanti
     });
     var riquadro = el('div', { classe: 'esito' }, [
-      el('p', { classe: 'esito-lode', testo: 'Esatto!' }),
+      el('div', { classe: 'esito-testa' }, [
+        mascotte('mascotte'),
+        el('p', { classe: 'esito-lode', testo: 'Esatto!' })
+      ]),
       el('p', { classe: 'operazione', testo: scritta }),
       avanti
     ]);
@@ -212,6 +226,7 @@
   function pulisci(nuovoTitolo, mostraBottoneMenu) {
     zittisci();
     contenuto.innerHTML = '';
+    contenuto.style.removeProperty('--colore-attivita');
     titolo.textContent = nuovoTitolo;
     bottoneMenu.hidden = !mostraBottoneMenu;
     window.scrollTo(0, 0);
@@ -219,15 +234,19 @@
 
   function mostraMenu() {
     pulisci('Impariamo insieme', false);
+    attivitaCorrente = null;
     contenuto.appendChild(el('div', { classe: 'consegna' }, [el('p', { testo: 'Scegli che cosa vuoi fare.' })]));
     var griglia = el('div', { classe: 'menu' });
     elencoAttivita.forEach(function (a) {
+      var icona = a.immagine
+        ? el('img', { classe: 'scheda-immagine', src: a.immagine, alt: '', draggable: 'false' })
+        : el('span', { classe: 'scheda-icona', 'aria-hidden': 'true', testo: a.icona });
       griglia.appendChild(el('button', {
         type: 'button', classe: 'scheda-attivita',
         style: a.colore ? '--colore-attivita: ' + a.colore : null,
         onclick: function () { avviaAttivita(a); }
       }, [
-        el('span', { classe: 'scheda-icona', 'aria-hidden': 'true', testo: a.icona }),
+        icona,
         el('span', { classe: 'scheda-titolo', testo: a.titolo }),
         el('span', { classe: 'scheda-descrizione', testo: a.descrizione })
       ]));
@@ -237,6 +256,8 @@
 
   function avviaAttivita(a) {
     pulisci(a.titolo, true);
+    attivitaCorrente = a;
+    if (a.colore) contenuto.style.setProperty('--colore-attivita', a.colore);
     var area = el('div', { classe: 'area-attivita' });
     contenuto.appendChild(area);
     a.avvia(area, impostazioni[a.id], {
@@ -254,7 +275,10 @@
   function mostraFine(a, esito) {
     pulisci(a.titolo, true);
     var ancora = el('button', { type: 'button', classe: 'bottone', testo: 'Ancora', onclick: function () { avviaAttivita(a); } });
+    attivitaCorrente = a;
+    if (a.colore) contenuto.style.setProperty('--colore-attivita', a.colore);
     contenuto.appendChild(el('div', { classe: 'fine' }, [
+      mascotte('mascotte-grande'),
       el('p', { classe: 'fine-grande', testo: 'Finito!' }),
       el('p', { testo: 'Hai completato ' + esito.totale + ' esercizi. Ottimo lavoro.' }),
       el('div', { classe: 'riga-bottoni' }, [

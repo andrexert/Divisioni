@@ -38,6 +38,7 @@
     id: 'colonna',
     titolo: 'Divisioni in colonna',
     icona: '÷',
+    immagine: 'img/gufo.png',
     colore: '#8b5cf6',
     descrizione: 'Un passo alla volta',
     impostazioni: [

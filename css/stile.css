@@ -495,3 +495,61 @@ main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none;
   gap: 0.3rem 1.2rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- Immagini in pixel art (generate con PixelLab, salvate in img/) ---------- */
+
+/* Ingrandite senza sfocature, a multipli esatti della dimensione originale */
+img.animale, img.cibo, img.mascotte, img.mascotte-grande, img.scheda-immagine {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: pixelated;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.scheda-immagine { width: 128px; height: 128px; }
+.mascotte { width: 64px; height: 64px; flex-shrink: 0; }
+.mascotte-grande { width: 192px; height: 192px; }
+.cibo { width: 50px; height: 50px; }   /* immagini 25×25, ingrandite 2× */
+.animale { width: 128px; height: 128px; }
+.animale.piccolo { width: 64px; height: 64px; }
+
+/* La mascotte "dice" la consegna in un fumetto */
+.consegna.con-mascotte { justify-content: center; }
+.fumetto {
+  position: relative;
+  padding: 0.6rem 1.1rem;
+  background: var(--superficie);
+  border: 3px solid var(--colore-attivita, var(--accento));
+  border-radius: var(--raggio);
+  text-align: left;
+}
+
+/* Animale sopra la sua ciotola: si tocca tutto il blocco */
+.scatola.con-animale {
+  flex-direction: column;
+  align-items: center;
+  width: auto;
+  min-height: 0;
+  padding: 0.3rem;
+  border: 0;
+  background: transparent;
+}
+.scatola.con-animale .scatola-pallini {
+  align-content: flex-start;
+  width: 8.5rem;
+  min-height: 5.5rem;
+  padding: 0.5rem;
+  border: 4px solid var(--scatola);
+  border-radius: 0 0 2.5rem 2.5rem;   /* forma di ciotola */
+  background: var(--superficie);
+}
+.scatola.con-animale.suggerita { background: transparent; }
+.scatola.con-animale.suggerita .scatola-pallini {
+  border-color: var(--accento);
+  border-style: dashed;
+  background: var(--accento-tenue);
+}
+.scatola.con-animale.statica .scatola-pallini { width: 7rem; min-height: 4.5rem; }
+
+.esito-testa { display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+.colori-tenui main, .alto-contrasto main { --colore-attivita: var(--accento) !important; }

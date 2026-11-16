@@ -24,7 +24,9 @@ Sono disponibili:
 
 ## L'attività "Divisioni"
 
-**Distribuisci.** Il ragazzo vede un mucchio di pallini e alcune scatole. Tocca una scatola alla volta per metterci un pallino. Il programma non permette di riempire una scatola prima delle altre: le scatole che stanno aspettando un pallino vengono evidenziate. Alla fine il ragazzo risponde a "Quanti pallini ci sono in ogni scatola?" e, se c'è il resto, a "Quanti pallini sono avanzati?". È la divisione come ripartizione in parti uguali, l'approccio più concreto.
+**Distribuisci.** Il ragazzo divide del cibo tra alcuni animali, per esempio "Dividi 12 pesci tra 3 gattini", toccando un animale alla volta per dargli un pezzo. Il programma non permette di darne di più a uno prima degli altri: le ciotole che aspettano vengono evidenziate. Alla fine il ragazzo risponde a "Quanti pesci ha ogni gattino?" e, se c'è il resto, a "Quanti pesci sono avanzati?". È la divisione come ripartizione in parti uguali, l'approccio più concreto, presentata come una situazione di condivisione equa.
+
+I temi disponibili sono gattini e pesci, cagnolini e ossi, coniglietti e carote, scoiattoli e ghiande, oppure i semplici pallini e scatole. Con l'impostazione "Animali" il tema viene scelto a caso all'inizio della sessione e resta lo stesso fino alla fine, per non introdurre cambiamenti imprevisti durante il lavoro.
 
 **Calcola.** Compare l'operazione scritta, per esempio `12 : 3 = ?`, e si risponde con i bottoni numerici. Il disegno di aiuto (scatole già riempite) si può mostrare sempre, su richiesta o mai. Se è attivo "su richiesta", compare comunque dopo due tentativi sbagliati.
 
@@ -61,10 +63,17 @@ Il programma segue alcuni principi pensati per i ragazzi nello spettro autistico
 
 Alla fine della sessione compare una piccola nota per il docente con il numero di esercizi risolti al primo tentativo.
 
+## Immagini
+
+Gli animali e le mascotte (la volpe per le divisioni, il gufo per le divisioni in colonna) sono in pixel art, generati con [PixelLab](https://www.pixellab.ai/) e salvati come PNG nella cartella `img/`. Il programma non contatta PixelLab né altri servizi: le immagini sono file normali, quindi tutto continua a funzionare offline e non serve alcuna chiave API. Le immagini del cibo sono state ritagliate a 25×25 pixel e vengono mostrate al doppio della dimensione. Gli animali (64×64) sono mostrati a 128 o 64 pixel. Si usano sempre multipli esatti con `image-rendering: pixelated`, così i pixel restano nitidi.
+
+Per aggiungere nuovi temi basta mettere in `img/` un animale e un cibo con lo stesso nome usato in `TEMI` dentro `js/attivita/divisioni.js`.
+
 ## Struttura dei file
 
 ```
 index.html                  pagina principale
+img/                        immagini in pixel art (animali, cibo, mascotte)
 css/stile.css               aspetto grafico (colori, dimensioni, alto contrasto)
 js/app.js                   nucleo: menu, impostazioni, voce, suoni
 js/attivita/divisioni.js    attività "Divisioni" (con gli oggetti)
@@ -80,7 +89,8 @@ js/attivita/colonna.js      attività "Divisioni in colonna"
 Impariamo.registra({
   id: 'moltiplicazioni',          // identificativo unico (usato anche per salvare le impostazioni)
   titolo: 'Moltiplicazioni',
-  icona: '×',
+  icona: '×',                     // oppure immagine: 'img/...png' (diventa anche la mascotte)
+  colore: '#13814a',              // colore della scheda nel menu e del fumetto
   descrizione: 'Gruppi uguali',
   impostazioni: [                 // compaiono da sole nella schermata Impostazioni
     { chiave: 'max', etichetta: 'Numero massimo', predefinito: 5,
