@@ -1,0 +1,584 @@
+/*
+ * Stile pensato per ragazzi nello spettro autistico:
+ * niente animazioni lampeggianti, elementi grandi,
+ * una sola cosa importante per volta, disposizione sempre uguale.
+ *
+ * Tre tavolozze, scelte dal docente nelle impostazioni:
+ *  - vivaci (predefinita): colori allegri ma con un ruolo preciso
+ *    (blu = cosa toccare, arancione = oggetti, giallo = dove guardare, verde = giusto)
+ *  - tenui: per i ragazzi con ipersensibilità visiva
+ *  - alto contrasto: per difficoltà visive
+ */
+
+:root {
+  --sfondo: #e8f3ff;
+  --superficie: #ffffff;
+  --testo: #18212b;
+  --testo-tenue: #4a5868;
+  --accento: #1565d8;          /* bottoni e cose da toccare */
+  --accento-tenue: #d3e5ff;
+  --bordo: #a9c8ee;
+  --barra: #1565d8;
+  --barra-testo: #ffffff;
+  --pallino: #ff7417;          /* oggetti da contare */
+  --scatola: #8b5cf6;          /* scatole */
+  --evidenzia: #ffe14d;        /* il numero su cui si sta lavorando */
+  --giusto: #13814a;
+  --giusto-tenue: #d2f7e1;
+  --avanzo: #ffe2c2;
+  --quadretto: rgba(21, 101, 216, 0.22);
+  --raggio: 16px;
+}
+
+:root.colori-tenui {
+  --sfondo: #f5f2ea;
+  --testo: #1f2a33;
+  --testo-tenue: #5b6670;
+  --accento: #2f6690;
+  --accento-tenue: #dce9f3;
+  --bordo: #c9c3b6;
+  --barra: #ffffff;
+  --barra-testo: #1f2a33;
+  --pallino: #d9822b;
+  --scatola: #c9c3b6;
+  --evidenzia: #dce9f3;
+  --giusto: #2e7d5b;
+  --giusto-tenue: #e1f1e8;
+  --avanzo: #fbeedd;
+  --quadretto: rgba(0, 0, 0, 0.1);
+}
+
+/* Alto contrasto: ha la precedenza sulle altre tavolozze */
+:root.alto-contrasto {
+  --sfondo: #ffffff;
+  --superficie: #ffffff;
+  --testo: #000000;
+  --testo-tenue: #000000;
+  --accento: #003a8c;
+  --accento-tenue: #fff3a3;
+  --bordo: #000000;
+  --barra: #ffffff;
+  --barra-testo: #000000;
+  --pallino: #000000;
+  --scatola: #000000;
+  --evidenzia: #fff3a3;
+  --giusto: #00552e;
+  --giusto-tenue: #d6f5e3;
+  --avanzo: #fff3a3;
+  --quadretto: rgba(0, 0, 0, 0.25);
+}
+
+html { font-size: 20px; }
+html.caratteri-grandi { font-size: 26px; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  background: var(--sfondo);
+  color: var(--testo);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.4;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 4px solid var(--accento); outline-offset: 3px; }
+
+/* ---------- Barra in alto ---------- */
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--barra);
+  color: var(--barra-testo);
+  border-bottom: 2px solid var(--bordo);
+}
+.barra h1 { margin: 0; font-size: 1.3rem; flex: 1; text-align: center; }
+.barra .suggerimento { color: var(--barra-testo); }
+.bottone-barra { color: var(--accento); font-weight: 600; }
+.bottone-barra {
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0.3rem 0.9rem;
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+  font-size: 1rem;
+}
+.zona-impostazioni { display: flex; align-items: center; gap: 0.5rem; }
+.suggerimento { font-size: 0.7rem; color: var(--testo-tenue); }
+#btn-impostazioni {
+  position: relative;
+  overflow: hidden;
+  color: var(--testo-tenue);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+/* Barra che si riempie mentre il docente tiene premuto */
+#btn-impostazioni::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 4px; width: 0;
+  background: var(--accento);
+}
+#btn-impostazioni.in-pressione::after { width: 100%; transition: width 1.5s linear; }
+
+main { max-width: 960px; margin: 0 auto; padding: 1rem 16px 3rem; outline: none; }
+
+/* ---------- Elementi comuni ---------- */
+
+.consegna {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  text-align: center;
+  font-size: 1.2rem;
+}
+.consegna p { margin: 0.6rem 0; }
+.bottone-ascolta {
+  border: 2px solid var(--bordo);
+  border-radius: 50%;
+  width: 2.6rem; height: 2.6rem;
+  background: var(--superficie);
+  flex-shrink: 0;
+}
+
+.bottone {
+  min-height: 3.2rem;
+  padding: 0.5rem 1.6rem;
+  border: 0;
+  border-radius: var(--raggio);
+  background: var(--accento);
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.bottone.secondario {
+  background: var(--superficie);
+  color: var(--accento);
+  border: 2px solid var(--accento);
+}
+.bottone.piccolo { min-height: 2.6rem; font-size: 0.9rem; padding: 0.3rem 1rem; }
+
+.riga-bottoni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.nota-docente { color: var(--testo-tenue); font-size: 0.8rem; text-align: center; }
+
+/* ---------- Menu ---------- */
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.2rem;
+  margin-top: 1rem;
+}
+.scheda-attivita {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.4rem 1rem;
+  border: 3px solid var(--colore-attivita, var(--accento));
+  border-top-width: 10px;
+  border-radius: var(--raggio);
+  background: var(--superficie);
+}
+.scheda-attivita:hover { background: var(--accento-tenue); }
+.colori-tenui .scheda-attivita, .alto-contrasto .scheda-attivita { --colore-attivita: var(--accento) !important; }
+.scheda-icona {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem; height: 4rem;
+  border-radius: 50%;
+  background: var(--colore-attivita, var(--accento));
+  color: #ffffff;
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+.scheda-titolo { font-size: 1.3rem; font-weight: 700; }
+.scheda-descrizione { color: var(--testo-tenue); font-size: 0.9rem; }
+
+/* ---------- Avanzamento ---------- */
+
+.avanzamento {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  color: var(--testo-tenue);
+  font-size: 0.9rem;
+}
+.puntini { display: flex; gap: 0.35rem; }
+.puntino {
+  width: 0.8rem; height: 0.8rem;
+  border-radius: 50%;
+  border: 2px solid var(--bordo);
+}
+.puntino.attuale { border-color: var(--accento); }
+.puntino.fatto { background: var(--accento); border-color: var(--accento); }
+
+/* ---------- Pallini, mucchio e scatole ---------- */
+
+.pallino {
+  display: inline-block;
+  width: 1.3rem; height: 1.3rem;
+  border-radius: 50%;
+  background: var(--pallino);
+}
+
+.mucchio {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.6rem;
+  max-width: 640px;
+  margin: 0.6rem auto;
+  padding: 0.7rem;
+  border-radius: var(--raggio);
+  background: var(--superficie);
+  border: 2px dashed var(--bordo);
+}
+.mucchio.avanzo { background: var(--avanzo); }
+
+.scatole {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin: 1.2rem 0;
+}
+.scatola {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: 7.5rem;
+  min-height: 7.5rem;
+  padding: 0.6rem;
+  border: 4px solid var(--scatola);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+}
+.scatola:disabled { cursor: default; opacity: 1; }
+.scatola.suggerita { border-color: var(--accento); border-style: dashed; background: var(--accento-tenue); }
+.scatola.statica { width: 6rem; min-height: 6rem; }
+.scatola-pallini {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem;
+}
+.scatola .pallino { width: 1.1rem; height: 1.1rem; }
+
+.figura { margin: 0.5rem 0 1rem; }
+.etichetta-avanzo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  color: var(--testo-tenue);
+}
+.etichetta-avanzo .mucchio { margin: 0; }
+
+/* ---------- Domande e tastierino ---------- */
+
+.messaggio { min-height: 1.5em; text-align: center; font-size: 1.05rem; color: var(--testo); }
+
+.domanda { margin: 1rem 0; text-align: center; }
+.domanda-testo { font-size: 1.2rem; font-weight: 600; margin: 0.4rem 0 0.8rem; }
+
+.tastierino {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+  max-width: 640px;
+  margin: 0.5rem auto;
+}
+.tasto {
+  width: 3.6rem; height: 3.6rem;
+  border: 3px solid var(--accento);
+  border-radius: var(--raggio);
+  background: var(--accento-tenue);
+  color: var(--accento);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.tasto:disabled { cursor: default; }
+.tasto.provato { opacity: 0.3; border-style: dashed; }
+.tasto.giusto { background: var(--giusto); border-color: var(--giusto); color: #ffffff; opacity: 1; }
+
+/* ---------- Operazione scritta ---------- */
+
+.operazione {
+  text-align: center;
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 0.8rem 0;
+  letter-spacing: 0.04em;
+}
+.casella {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 0.2em;
+  border: 3px dashed var(--accento);
+  border-radius: 10px;
+  color: var(--accento);
+}
+.casella.compilata { border-style: solid; border-color: var(--giusto); color: var(--giusto); }
+
+/* ---------- Esito e fine ---------- */
+
+.esito {
+  margin: 1.5rem auto 0;
+  padding: 1rem;
+  max-width: 640px;
+  text-align: center;
+  border-radius: var(--raggio);
+  background: var(--giusto-tenue);
+  border: 3px solid var(--giusto);
+}
+.esito-lode { font-size: 1.5rem; font-weight: 700; color: var(--giusto); margin: 0.3rem 0; }
+.esito .operazione { font-size: 2rem; }
+
+.fine { text-align: center; padding-top: 2rem; font-size: 1.2rem; }
+.fine-grande { font-size: 2.6rem; font-weight: 700; color: var(--giusto); margin: 0; }
+
+/* ---------- Impostazioni ---------- */
+
+.sezione-impostazioni {
+  margin: 1.2rem 0;
+  padding: 0.8rem 1.2rem;
+  background: var(--superficie);
+  border: 2px solid var(--bordo);
+  border-radius: var(--raggio);
+}
+.sezione-impostazioni h2 { font-size: 1.15rem; margin: 0.3rem 0 0.6rem; }
+.impostazione {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--bordo);
+}
+.impostazione-etichetta { font-size: 0.95rem; }
+.scelte { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.scelta {
+  min-height: 2.4rem;
+  padding: 0.2rem 0.9rem;
+  border: 2px solid var(--bordo);
+  border-radius: 10px;
+  background: var(--superficie);
+  font-size: 0.9rem;
+}
+.scelta[aria-pressed="true"] { background: var(--accento); border-color: var(--accento); color: #ffffff; }
+
+@media (max-width: 600px) {
+  html { font-size: 17px; }
+  .scatola { width: 6rem; min-height: 6rem; }
+  .operazione { font-size: 2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #btn-impostazioni.in-pressione::after { transition: none; }
+}
+
+/* ---------- Divisioni in colonna ---------- */
+
+.colonna-area {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1.5rem 2.5rem;
+  margin: 1rem 0;
+}
+
+.colonna-lavagna {
+  /* Quaderno a quadretti: ogni cifra sta in un quadretto, come sul quaderno di scuola.
+     Il margine interno è di un quadretto, così la quadrettatura combacia con le cifre. */
+  --cella: 2.6rem;
+  --altezza: 2.6rem;
+  display: flex;
+  align-items: flex-start;
+  padding: var(--cella);
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(to right, var(--quadretto) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--quadretto) 1px, transparent 1px);
+  background-size: var(--cella) var(--cella);
+  border: 2px solid var(--bordo);
+  border-radius: 6px;
+  box-shadow: 0 3px 0 var(--bordo);
+  font-size: 1.9rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.colonna-griglia { display: grid; grid-auto-rows: var(--altezza); }
+.cella {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+/* Il numero su cui si sta lavorando */
+.cella.attiva, .colonna-divisore.attiva { background: var(--evidenzia); }
+/* La casella dove scrivere la risposta */
+.cella.da-scrivere {
+  border: 3px dashed var(--accento);
+  border-radius: 8px;
+  color: var(--accento);
+}
+.cella.linea { border-bottom: 3px solid var(--testo); }
+.cella.segno { color: var(--testo-tenue); font-weight: 400; }
+.cella.scesa { color: var(--accento); }
+/* Freccina sotto le cifre del dividendo già abbassate */
+.cella.abbassata::after {
+  content: "\2193";
+  position: absolute;
+  right: 0;
+  bottom: -0.1em;
+  font-size: 0.45em;
+  color: var(--accento);
+}
+
+/* Le righe della divisione sono ombre interne: non occupano spazio e non spostano i quadretti */
+.colonna-destra {
+  display: grid;
+  grid-auto-rows: var(--altezza);
+  align-self: stretch;
+  min-width: calc(var(--cella) * 3);
+  box-shadow: inset 3px 0 0 var(--testo);
+}
+.colonna-divisore { display: flex; box-shadow: inset 0 -3px 0 var(--testo); }
+.colonna-quoziente { display: flex; }
+.colonna-divisore .cella, .colonna-quoziente .cella { width: var(--cella); height: var(--altezza); }
+
+.colonna-comandi { display: flex; align-items: center; min-height: 6rem; }
+.bottone.grande { min-width: 6rem; min-height: 4rem; font-size: 1.4rem; }
+
+.tastiera-numerica {
+  display: grid;
+  grid-template-columns: repeat(3, 3.6rem);
+  gap: 0.6rem;
+}
+.tasto-canc { border-color: var(--bordo); color: var(--testo-tenue); }
+.tasto-ok { background: var(--accento); color: #ffffff; font-size: 1.2rem; }
+
+.tabellina {
+  max-width: 640px;
+  margin: 0.5rem auto;
+  padding: 0.6rem 1rem;
+  border: 2px dashed var(--bordo);
+  border-radius: var(--raggio);
+  background: var(--superficie);
+  text-align: center;
+}
+.tabellina-titolo { margin: 0 0 0.4rem; font-weight: 600; }
+.tabellina-elenco {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Immagini in pixel art (generate con PixelLab, salvate in img/) ---------- */
+
+/* Ingrandite senza sfocature, a multipli esatti della dimensione originale */
+img.animale, img.cibo, img.mascotte, img.mascotte-grande, img.scheda-immagine {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: pixelated;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.scheda-immagine { width: 128px; height: 128px; }
+.mascotte { width: 64px; height: 64px; flex-shrink: 0; }
+.mascotte-grande { width: 192px; height: 192px; }
+.cibo { width: 50px; height: 50px; }   /* immagini 25×25, ingrandite 2× */
+.animale { width: 128px; height: 128px; }
+.animale.piccolo { width: 64px; height: 64px; }
+
+/* La mascotte "dice" la consegna in un fumetto */
+.consegna.con-mascotte { justify-content: center; }
+.fumetto {
+  position: relative;
+  padding: 0.6rem 1.1rem;
+  background: var(--superficie);
+  border: 3px solid var(--colore-attivita, var(--accento));
+  border-radius: var(--raggio);
+  text-align: left;
+}
+
+/* Animale sopra la sua ciotola: si tocca tutto il blocco */
+.scatola.con-animale {
+  flex-direction: column;
+  align-items: center;
+  width: auto;
+  min-height: 0;
+  padding: 0.3rem;
+  border: 0;
+  background: transparent;
+}
+.scatola.con-animale .scatola-pallini {
+  align-content: flex-start;
+  width: 8.5rem;
+  min-height: 5.5rem;
+  padding: 0.5rem;
+  border: 4px solid var(--scatola);
+  border-radius: 0 0 2.5rem 2.5rem;   /* forma di ciotola */
+  background: var(--superficie);
+}
+.scatola.con-animale.suggerita { background: transparent; }
+.scatola.con-animale.suggerita .scatola-pallini {
+  border-color: var(--accento);
+  border-style: dashed;
+  background: var(--accento-tenue);
+}
+.scatola.con-animale.statica .scatola-pallini { width: 7rem; min-height: 4.5rem; }
+
+.esito-testa { display: flex; align-items: center; justify-content: center; gap: 0.6rem; }
+.colori-tenui main, .alto-contrasto main { --colore-attivita: var(--accento) !important; }
+
+/* ---------- Sfondi illustrati (pixel art, solo con colori vivaci) ---------- */
+
+.con-sfondo body {
+  background-color: var(--sfondo);
+  background-image: var(--sfondo-immagine);
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  image-rendering: pixelated;
+  min-height: 100vh;
+}
+/* Il lavoro sta su un pannello chiaro: lo sfondo resta ai margini e non disturba */
+.con-sfondo main {
+  margin-top: 1.2rem;
+  margin-bottom: 1.2rem;
+  background: rgba(244, 249, 255, 0.985);
+  border-radius: 24px;
+  box-shadow: 0 6px 24px rgba(0, 30, 80, 0.18);
+}
+@media (max-width: 1000px) {
+  .con-sfondo main { margin-left: 12px; margin-right: 12px; }
+}

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Impariamo insieme</title>
+  <link rel="stylesheet" href="css/stile.css">
+  <!-- Web app installabile: nome, icona e colore nella barra del sistema -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#1565d8">
+  <link rel="icon" type="image/png" href="img/icona-64.png">
+  <link rel="apple-touch-icon" href="img/icona-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Impariamo">
+</head>
+<body>
+  <header class="barra">
+    <button id="btn-menu" class="bottone-barra" type="button" hidden>&#8592; Menu</button>
+    <h1 id="titolo">Impariamo insieme</h1>
+    <div class="zona-impostazioni">
+      <span id="suggerimento" class="suggerimento" aria-live="polite"></span>
+      <!-- Si apre tenendo premuto: evita che i ragazzi ci entrino per sbaglio -->
+      <button id="btn-impostazioni" class="bottone-barra" type="button"
+              aria-label="Impostazioni per il docente (tieni premuto)">&#9881;</button>
+    </div>
+  </header>
+
+  <main id="contenuto" tabindex="-1"></main>
+
+  <!-- Script classici (non moduli): così funziona anche aprendo il file con un doppio clic -->
+  <script src="js/app.js"></script>
+  <script src="js/attivita/divisioni.js"></script>
+  <script src="js/attivita/colonna.js"></script>
+  <script>Impariamo.avvia();</script>
+</body>
+</html>
