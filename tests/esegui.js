@@ -48,7 +48,18 @@ async function apri(browser, profilo, impostazioni) {
   });
   // Se il test fissa le impostazioni di un'attività, vale "Scelgo io" (non il percorso a livelli)
   const imp = JSON.parse(JSON.stringify(impostazioni || {}));
-  Object.keys(imp).forEach(k => { if (k !== 'generale' && k !== 'livelli' && imp[k].difficolta === undefined) imp[k].difficolta = 'manuale'; });
+  // Animali, lunghezza, aiuto e guida valgono per tutte le attività: stanno tra le generali.
+  // Di base si gioca con i gattini (la schermata di scelta ha un test suo).
+  imp.generale = Object.assign({ tema: 'gatti' }, imp.generale || {});
+  Object.keys(imp).forEach(k => {
+    if (k === 'generale' || k === 'livelli') return;
+    const a = imp[k];
+    if (a.difficolta === undefined) a.difficolta = 'manuale';
+    if (a.tema) imp.generale.tema = a.tema;
+    if (a.aiuto) imp.generale.aiuto = a.aiuto;
+    if (a.guida) imp.generale.guida = a.guida;
+    if (a.numeroEsercizi) imp.generale.lunghezza = a.numeroEsercizi <= 3 ? 'breve' : a.numeroEsercizi <= 5 ? 'media' : 'lunga';
+  });
   const livelli = imp.livelli; delete imp.livelli;
   await pagina.addInitScript(([k, v, l]) => {
     if (sessionStorage.getItem('test-pronto')) return;   // solo al primo caricamento
@@ -275,6 +286,14 @@ async function divisioni(browser, profilo, tema) {
       const r = await p.locator('.mucchio > *').count();
       await rispondi(p, q, profilo, cosa);
       if (r > 0) await rispondi(p, r, profilo, cosa);
+    } else if (await p.locator('.mucchio-tocca').count()) {
+      // Fare gruppi: si tocca il cibo finché le ciotole si riempiono
+      while (await p.locator('.mucchio-tocca .pezzo:not([disabled])').count()) await p.premi('.mucchio-tocca .pezzo:not([disabled])');
+      await righeDa5(p, cosa);
+      const piene = await p.locator('.scatola.piena').count();
+      const r = await p.locator('.mucchio-tocca .pezzo').count();
+      await rispondi(p, piene, profilo, cosa);
+      if (r > 0) await rispondi(p, r, profilo, cosa);
     } else {
       // Calcola: due errori fanno comparire il disegno
       const [a, d] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
@@ -345,6 +364,40 @@ async function colonna(browser, profilo, imp, usaTastiera) {
 
 /* ---------- Addizioni, sottrazioni e moltiplicazioni in colonna ---------- */
 
+// I due numeri scritti sul quaderno (righe 3 e 4: dopo le sigle e i riporti)
+async function numeriQuaderno(p) {
+  return p.evaluate(() => {
+    const g = document.querySelector('.quaderno .colonna-griglia');
+    const colonne = g.style.gridTemplateColumns.match(/repeat\((\d+)/)[1] * 1;
+    const celle = Array.prototype.slice.call(g.children);
+    const riga = (r) => Number(celle.slice(r * colonne + 1, (r + 1) * colonne).map(c => (c.classList.contains('barrata') ? c.textContent : c.textContent)).join('').replace(/\D/g, ''));
+    return { a: riga(2), b: riga(3), colonne: colonne - 1 };
+  });
+}
+
+// La cifra che il semiguidato si aspetta nel quadretto da scrivere
+async function cifraAttesa(p, id, tutto) {
+  const { a, b, colonne: W } = await numeriQuaderno(p);
+  const pos = await p.evaluate(() => {
+    const g = document.querySelector('.quaderno .colonna-griglia');
+    const n = g.style.gridTemplateColumns.match(/repeat\((\d+)/)[1] * 1;
+    const i = Array.prototype.indexOf.call(g.children, g.querySelector('.da-scrivere'));
+    return { riga: Math.floor(i / n), col: i % n - 1 };
+  });
+  let numero, fine;
+  if (id.startsWith('moltiplicazioni')) {
+    const r = pos.riga - 4;
+    numero = a * Math.floor(b / Math.pow(10, r) % 10);
+    fine = W - 1 - r;
+  } else {
+    numero = id.startsWith('addizioni') ? a + b : a - b;
+    fine = W - 1;
+  }
+  const quante = fine - pos.col;               // cifre a destra del quadretto
+  const v = Math.floor(numero / Math.pow(10, quante));
+  return tutto ? v : v % 10;
+}
+
 async function operazioneInColonna(browser, profilo, area, id, imp, usaTastiera) {
   const nome = id + ' ' + JSON.stringify(imp) + (usaTastiera ? ' (tastiera)' : '');
   const conf = {}; conf[id] = Object.assign({ numeroEsercizi: 2 }, imp);
@@ -370,9 +423,29 @@ async function operazioneInColonna(browser, profilo, area, id, imp, usaTastiera)
       await controllaBordi(p, nome);
       controllato = true;
     }
-    if (t.startsWith('Hai finito')) {
+    if (/^Colonna (delle|dei) .*Scrivi (la cifra del risultato|il risultato di questa colonna)/.test(t) || /^Moltiplica le cifre evidenziate/.test(t)) {
+      // Semiguidato: la cifra giusta si ricava dai numeri sul quaderno
+      const v = await cifraAttesa(p, id, /risultato di questa colonna|tutto il risultato/.test(t));
+      const accettata = await scrivi(p, v, tastiera);
+      if (!accettata) {
+        verifica(/prestito/.test(await p.textContent('.messaggio')), nome + ': manca l\'avviso "prima chiedi il prestito"');
+        await bottone('Chiedi il prestito');
+      }
+    } else if (t.startsWith('Scrivi il risultato.')) {
+      // Da solo: prima una cifra sbagliata (deve restare segnata), poi giusto
+      const { a, b } = await numeriQuaderno(p);
+      const ris = String(id.startsWith('addizioni') ? a + b : id.startsWith('sottrazioni') ? a - b : a * b);
+      const cifre = ris.split('').reverse();
+      cifre[cifre.length - 1] = String((Number(cifre[cifre.length - 1]) + 1) % 10);
+      for (const c of cifre) await p.keyboard.press(c);
+      await p.keyboard.press('Enter');
+      verifica(await p.locator('.cella.sbagliata').count() === 1, nome + ': la cifra sbagliata non è segnata');
+      await p.keyboard.press(ris.charAt(0));
+      await p.keyboard.press('Enter');
+    } else if (t.startsWith('Hai finito')) {
       const scritta = await p.textContent('.esito .operazione');
       const [a, b, r] = scritta.match(/\d+/g).map(Number);
+      verifica((await p.textContent('.esito')).includes('Al contrario'), nome + ': manca la riga "Al contrario"');
       const giusto = id.startsWith('addizioni') ? a + b : id.startsWith('sottrazioni') ? a - b : a * b;
       verifica(r === giusto, nome + ': esito sbagliato ' + scritta);
       if (usaTastiera) await p.keyboard.press('Enter'); else await p.premi('.esito button');
@@ -472,10 +545,96 @@ async function percorso(browser, profilo) {
   await p.press('#parola-docente', 'Enter');
   verifica((await p.textContent('.proposte')).includes('pronto per il livello 2'), 'percorso: manca la proposta per il docente');
   await controllaBordi(p, 'impostazioni con i livelli');
-  await p.click('#livello-addizioni button:has-text("Livello successivo")');
+  await p.click('#livello-addizioni button[aria-label="Livello successivo"]');
   verifica((await p.textContent('#livello-addizioni .livello-titolo')).includes('livello 2'), 'percorso: il docente non riesce a cambiare livello');
   verifica(await p.locator('#btn-impostazioni.con-proposta').count() === 0, 'percorso: il pallino resta dopo il cambio');
   await chiudi(p, 'Percorso deciso dal docente');
+}
+
+/* ---------- Le novità del lato didattico ---------- */
+
+async function novita(browser, profilo) {
+  // 1. Il ragazzo sceglie gli animali; agenda visiva; pittogrammi CAA
+  let p = await apri(browser, profilo, { generale: { tema: 'scelta', pittogrammi: true } });
+  await entra(p, 0, 'Con gli oggetti');
+  verifica(await p.locator('[data-tema]').count() === 4, 'scelta: non ci sono i quattro animali');
+  await controllaBordi(p, 'scelta degli animali');
+  await p.premi('[data-tema="conigli"]');
+  verifica((await consegna(p)).includes('coniglietto'), 'scelta: gli animali scelti non sono usati');
+  verifica(await p.locator('.agenda-passo').count() === 6, 'agenda: non ci sono 5 passi più "Finito"');
+  await p.waitForFunction(() => document.querySelectorAll('.pittogramma img').length > 0 &&
+    Array.prototype.every.call(document.querySelectorAll('.pittogramma img'), i => i.complete), null, { timeout: 5000 }).catch(() => null);
+  const picto = await p.evaluate(() => Array.prototype.map.call(document.querySelectorAll('.pittogramma img'), i => i.complete && i.naturalWidth > 0));
+  verifica(picto.length >= 1 && picto.every(Boolean), 'pittogrammi: mancano o non si caricano');
+  await chiudi(p, 'Scelta, agenda e pittogrammi');
+
+  // 2. Correzione al terzo errore e riga "Al contrario" (addizioni, calcola)
+  p = await apri(browser, profilo, { addizioni: { modalita: 'calcola', sommaMax: 10, numeroEsercizi: 3, aiuto: 'mai' } });
+  await entra(p, 0, 'Con gli oggetti');
+  const [a, b] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
+  for (let i = 0; i < 3; i++) await sbaglia(p, a + b, profilo);
+  verifica(await p.locator('.tasto.suggerito').count() === 1, 'correzione: al terzo errore la risposta giusta non è indicata');
+  verifica((await p.textContent('.correzione')).includes(String(a + b)), 'correzione: manca la frase con la risposta giusta');
+  await rispondi(p, a + b, profilo, 'correzione');
+  verifica((await p.textContent('.esito')).includes('Al contrario: ' + (a + b)), 'ponti: manca "Al contrario" nelle addizioni');
+  await chiudi(p, 'Correzione');
+
+  // 3. Divisioni: "Fare gruppi" (quanti animali si sfamano)
+  p = await apri(browser, profilo, { divisioni: { modalita: 'gruppi', conResto: true, numeroEsercizi: 3, divisoreMax: 5, quozienteMax: 5 } });
+  await entra(p, 3, 'Con gli oggetti');
+  for (let es = 0; es < 3; es++) {
+    const d = Number((await consegna(p)).match(/(?:mangia|stanno) (\d+)/)[1]);
+    while (await p.locator('.mucchio-tocca .pezzo:not([disabled])').count()) await p.premi('.mucchio-tocca .pezzo:not([disabled])');
+    const piene = await p.locator('.scatola.piena').count();
+    const resto = await p.locator('.mucchio-tocca .pezzo').count();
+    verifica(resto < d, 'gruppi: avanzano abbastanza pezzi per un altro gruppo');
+    await rispondi(p, piene, profilo, 'gruppi');
+    if (resto) await rispondi(p, resto, profilo, 'gruppi, resto');
+    const esito = await p.textContent('.esito');
+    verifica(/sta \d+ volt[ae] nel/.test(esito), 'gruppi: manca "il 3 sta 4 volte nel 12"');
+    await p.premi('.esito button');
+  }
+  await fineSessione(p, 'Divisioni a gruppi');
+
+  // 4. Problemi: scegliere l'operazione, poi calcolare
+  p = await apri(browser, profilo, { problemi: { operazioni: 'tutte', numeroMax: 20, numeroEsercizi: 3 } });
+  await p.premi('.scheda-attivita:has-text("Problemi")');
+  for (let es = 0; es < 3; es++) {
+    let giusta = null;
+    for (const segno of ['+', '−', '×', ':']) {
+      await p.premi(`.bottone-operazione[data-segno="${segno}"]`);
+      if (await p.locator('.scelta-operazione.conclusa').count()) { giusta = segno; break; }
+      verifica((await p.textContent('.messaggio')).includes('Leggi bene'), 'problemi: manca l\'indizio sull\'operazione');
+    }
+    verifica(giusta !== null, 'problemi: nessuna operazione accettata');
+    const [x, y] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
+    const r = giusta === '+' ? x + y : giusta === '−' ? x - y : giusta === '×' ? x * y : x / y;
+    await rispondi(p, r, profilo, 'problemi');
+    verifica((await p.locator('.esito .operazione-dopo').count()) === 1, 'problemi: manca la risposta a parole');
+    await p.premi('.esito button');
+  }
+  await fineSessione(p, 'Problemi');
+
+  // 5. Il docente vede gli errori; schede da stampare
+  p = await apri(browser, profilo, { addizioni: { modalita: 'calcola', sommaMax: 10, numeroEsercizi: 3, aiuto: 'mai' } });
+  await entra(p, 0, 'Con gli oggetti');
+  for (let es = 0; es < 3; es++) {
+    const [x, y] = (await p.textContent('.operazione')).match(/\d+/g).map(Number);
+    await sbaglia(p, x + y, profilo);
+    await rispondi(p, x + y, profilo, 'errori');
+    await p.premi('.esito button');
+  }
+  await p.premi('#btn-impostazioni');
+  await p.fill('#parola-docente', 'docente');
+  await p.press('#parola-docente', 'Enter');
+  verifica((await p.textContent('#livello-addizioni')).includes('il calcolo (3)'), 'errori: il docente non vede "il calcolo (3)"');
+  await p.premi('button:has-text("Prepara una scheda")');
+  verifica(await p.locator('.foglio-esercizio').count() === 9, 'schede: non ci sono 9 esercizi');
+  await p.premi('.scelta:has-text("Divisioni: in colonna")');
+  verifica(await p.locator('.foglio-esercizio .colonna-divisore').count() === 9, 'schede: le divisioni non sono in colonna');
+  verifica((await p.textContent('.foglio-soluzioni')).includes(':'), 'schede: mancano le soluzioni');
+  await controllaBordi(p, 'schede da stampare');
+  await chiudi(p, 'Errori e schede');
 }
 
 /* ---------- Menu, impostazioni, aspetto ---------- */
@@ -484,7 +643,7 @@ async function menuEImpostazioni(browser, profilo) {
   const p = await apri(browser, profilo, {});
   await controllaBordi(p, 'menu');
   const titoli = await p.locator('.scheda-titolo').allTextContents();
-  verifica(titoli.join('|') === 'Addizioni|Sottrazioni|Moltiplicazioni|Divisioni',
+  verifica(titoli.join('|') === 'Addizioni|Sottrazioni|Moltiplicazioni|Divisioni|Problemi',
     'il menu non mostra le quattro aree del percorso: ' + titoli.join(', '));
   // Dentro ogni area: "Con gli oggetti" e "In colonna"; il pulsante in alto risale di un livello
   for (let a = 0; a < 4; a++) {
@@ -556,6 +715,14 @@ async function menuEImpostazioni(browser, profilo) {
     await operazioneInColonna(browser, profilo, 1, 'sottrazioni-colonna', { cifre: 4, prestito: true }, !!profilo.tastiera);
     await operazioneInColonna(browser, profilo, 2, 'moltiplicazioni-colonna', { cifre: 2, moltiplicatore: 1 }, false);
     await operazioneInColonna(browser, profilo, 2, 'moltiplicazioni-colonna', { cifre: 3, moltiplicatore: 2 }, !!profilo.tastiera);
+    // L'aiuto che si riduce: semiguidato e da solo
+    await operazioneInColonna(browser, profilo, 0, 'addizioni-colonna', { cifre: 3, riporto: true, guida: 'semiguidato' }, false);
+    await operazioneInColonna(browser, profilo, 1, 'sottrazioni-colonna', { cifre: 4, prestito: true, guida: 'semiguidato' }, false);
+    await operazioneInColonna(browser, profilo, 2, 'moltiplicazioni-colonna', { cifre: 3, moltiplicatore: 2, guida: 'semiguidato' }, false);
+    await operazioneInColonna(browser, profilo, 0, 'addizioni-colonna', { cifre: 3, riporto: true, guida: 'autonomo' }, true);
+    await operazioneInColonna(browser, profilo, 1, 'sottrazioni-colonna', { cifre: 3, prestito: true, guida: 'autonomo' }, true);
+    await operazioneInColonna(browser, profilo, 2, 'moltiplicazioni-colonna', { cifre: 2, moltiplicatore: 1, guida: 'autonomo' }, true);
+    await novita(browser, profilo);
     if (profilo.tastiera) await colonna(browser, profilo, combinazioni[3], true);
     console.log('    ' + (errori === prima ? 'tutto a posto' : (errori - prima) + ' errori'));
   }

@@ -140,20 +140,129 @@
       if (nodo) comandi.appendChild(nodo);
     }
 
-    // Una domanda con risposta numerica (tastierino con cifre, cancella e OK)
-    function numero(testo, corretto, suggerimento, poi) {
+    // Una domanda con risposta numerica (tastierino con cifre, cancella e OK).
+    // tipo: tipo di errore per il docente. Dopo due errori si mostra la risposta giusta.
+    function numero(testo, corretto, suggerimento, poi, tipo) {
       nascondi();
       consegna(testo);
       mostra(k.risposta(0, 99, corretto,
         function () { avviso.dici(''); poi(); },
-        function (valore) { errori++; avviso.dici(suggerimento(valore)); }));
+        function (valore) { errori++; avviso.dici(suggerimento(valore)); },
+        { tipo: tipo, correzioneDopo: 2 }));
     }
 
-    // Una domanda Sì/No (anche con i tasti S e N)
-    function siNo(testo, giusto, spiegazione, poi) {
+    // Semiguidato: il tastierino e, accanto, un bottone d'azione ("Chiedi il prestito").
+    // Se serve l'azione, ogni cifra scritta prima è un errore; se non serve, lo è l'azione.
+    function numeroOAzione(testo, corretto, serveAzione, etichetta, suggerimenti, poi, dopoAzione, tipo) {
+      nascondi();
+      consegna(testo);
+      var sbagliAzione = 0;
+      var tastierino = k.risposta(0, 99, serveAzione ? null : corretto,
+        function () { avviso.dici(''); poi(); },
+        function (valore) {
+          errori++;
+          avviso.dici(serveAzione ? suggerimenti.serveAzione : suggerimenti.cifra(valore));
+          if (serveAzione && ++sbagliAzione >= 2) bottone.classList.add('suggerito');
+        },
+        { tipo: serveAzione ? 'decisione' : tipo, correzioneDopo: 2 });
+      var bottone = el('button', { type: 'button', classe: 'bottone grande', testo: etichetta });
+      bottone.addEventListener('click', function () {
+        if (!serveAzione) {
+          errori++;
+          if (api.errore) api.errore('decisione');
+          api.suono('riprova');
+          avviso.dici(suggerimenti.nonServe);
+          return;
+        }
+        dopoAzione();
+      });
+      mostra(el('div', { classe: 'tastierino-e-azione' }, [tastierino, el('div', { classe: 'riga-bottoni' }, [bottone])]));
+    }
+
+    /*
+     * Da solo: il ragazzo scrive tutte le cifre del risultato, da destra, senza domande.
+     * Con OK si controlla: le cifre giuste restano, quelle sbagliate si riscrivono.
+     * Dopo due controlli sbagliati il programma mostra le cifre giuste.
+     *   colonne: le colonne del risultato da destra a sinistra; giuste: le cifre attese
+     *   aggiorna(valori, sbagliate, cursore): ridisegna il quaderno
+     */
+    function liberi(testo, colonne, giuste, aggiorna, poi) {
+      nascondi();
+      consegna(testo);
+      var valori = {};
+      var daScrivere = colonne.slice();
+      var sbagliate = {};
+      var controlli = 0;
+      function cursore() {
+        for (var i = 0; i < daScrivere.length; i++) if (valori[daScrivere[i]] === undefined) return daScrivere[i];
+        return null;
+      }
+      function premi(t) {
+        if (nodo.classList.contains('conclusa')) return;
+        if (/^[0-9]$/.test(t)) {
+          var c = cursore();
+          if (c !== null) { valori[c] = t; delete sbagliate[c]; }
+        } else if (t === 'canc') {
+          for (var i = daScrivere.length - 1; i >= 0; i--) {
+            if (valori[daScrivere[i]] !== undefined) { delete valori[daScrivere[i]]; break; }
+          }
+        } else if (t === 'ok') {
+          if (cursore() !== null) { avviso.dici('Scrivi tutte le cifre, poi premi OK.'); return; }
+          var errate = colonne.filter(function (c) { return valori[c] !== giuste[colonne.indexOf(c)]; });
+          if (!errate.length) {
+            nodo.classList.add('conclusa');
+            api.suono('giusto');
+            avviso.dici('');
+            aggiorna(valori, {}, null);
+            return poi();
+          }
+          errori++;
+          controlli++;
+          if (api.errore) api.errore('cifra');
+          api.suono('riprova');
+          if (controlli >= 2) {
+            // Correzione: si mostrano le cifre giuste, poi si va avanti
+            colonne.forEach(function (c, i) { valori[c] = giuste[i]; });
+            errate.forEach(function (c) { sbagliate[c] = true; });
+            nodo.classList.add('conclusa');
+            aggiorna(valori, sbagliate, null);
+            avviso.dici('Guarda: le cifre colorate sono state corrette. Ecco il risultato giusto.');
+            mostra(k.azione('Ho capito', poi));
+            return;
+          }
+          errate.forEach(function (c) { sbagliate[c] = true; delete valori[c]; });
+          daScrivere = errate;
+          avviso.dici(errate.length === 1 ? 'Una cifra non è giusta: è quella colorata. Riscrivila.' : 'Le cifre colorate non sono giuste: riscrivile.');
+        }
+        aggiorna(valori, sbagliate, cursore());
+      }
+      var tasti = el('div', { classe: 'tastiera-numerica' });
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'canc', '0', 'ok'].forEach(function (t) {
+        tasti.appendChild(el('button', {
+          type: 'button', classe: 'tasto' + (t === 'ok' ? ' tasto-ok' : t === 'canc' ? ' tasto-canc' : ''),
+          'aria-label': t === 'canc' ? 'Cancella' : null,
+          testo: t === 'canc' ? '\u232B' : t === 'ok' ? 'OK' : t,
+          onclick: function () { premi(t); }
+        }));
+      });
+      var nodo = el('div', { classe: 'risposta' }, [tasti]);
+      nodo.gestisciTasto = function (t) {
+        if (/^[0-9]$/.test(t)) premi(t);
+        else if (t === 'Backspace' || t === 'Delete') premi('canc');
+        else if (t === 'Enter') premi('ok');
+        else return false;
+        return true;
+      };
+      mostra(nodo);
+      aggiorna(valori, sbagliate, cursore());
+    }
+
+    // Una domanda Sì/No (anche con i tasti S e N). Dopo due errori si indica quella giusta.
+    function siNo(testo, giusto, spiegazione, poi, tipo) {
       nascondi();
       consegna(testo);
       var nodo = el('div', { classe: 'riga-bottoni risposta' });
+      var sbagli = 0;
       function rispondi(si) {
         if (nodo.classList.contains('conclusa')) return;
         if (si === giusto) {
@@ -163,8 +272,10 @@
           poi();
         } else {
           errori++;
+          if (api.errore) api.errore(tipo || 'decisione');
           api.suono('riprova');
           avviso.dici(spiegazione);
+          if (++sbagli >= 2) nodo.children[giusto ? 0 : 1].classList.add('suggerito');
         }
       }
       nodo.appendChild(el('button', { type: 'button', classe: 'bottone grande', testo: 'Sì', onclick: function () { rispondi(true); } }));
@@ -207,6 +318,8 @@
 
     return {
       numero: numero,
+      numeroOAzione: numeroOAzione,
+      liberi: liberi,
       siNo: siNo,
       azione: azione,
       fine: fine,

@@ -24,32 +24,53 @@
     sfondo: 'img/sfondo-prato.png',
     colore: '#ff7417',
     descrizione: 'Animali e cibo da dividere',
+    usaTemi: true,
     impostazioni: [
       {
         chiave: 'modalita', etichetta: 'Tipo di esercizio', predefinito: 'distribuisci',
         opzioni: [
           { valore: 'distribuisci', testo: 'Distribuisci' },
+          { valore: 'gruppi', testo: 'Fare gruppi' },
           { valore: 'calcola', testo: 'Calcola' },
           { valore: 'alterna', testo: 'Alterna' }
         ]
       },
-      C.impostazioneTema('Che cosa si divide'),
       { chiave: 'divisoreMax', etichetta: 'Dividere al massimo per', predefinito: 3, opzioni: C.opzioniNumeriche([2, 3, 5, 10]) },
       { chiave: 'quozienteMax', etichetta: 'Risultato al massimo', predefinito: 5, opzioni: C.opzioniNumeriche([3, 5, 10]) },
-      { chiave: 'conResto', etichetta: 'Divisioni con il resto', predefinito: false, opzioni: Impariamo.SI_NO },
-      C.impostazioneEsercizi(),
-      C.impostazioneAiuto('Disegno di aiuto in "Calcola"')
+      { chiave: 'conResto', etichetta: 'Divisioni con il resto', predefinito: false, opzioni: Impariamo.SI_NO }
     ],
     // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
     livelli: [
       { nome: 'Distribuire tra 2 o 3', imp: { modalita: 'distribuisci', divisoreMax: 3, quozienteMax: 5, conResto: false } },
       { nome: 'Distribuire tra 2, 3, 4 o 5', imp: { modalita: 'distribuisci', divisoreMax: 5, quozienteMax: 5, conResto: false } },
-      { nome: 'Distribuire e calcolare', imp: { modalita: 'alterna', divisoreMax: 5, quozienteMax: 5, conResto: false } },
+      { nome: 'Fare gruppi uguali: quanti ne sfami?', imp: { modalita: 'gruppi', divisoreMax: 5, quozienteMax: 5, conResto: false } },
+      { nome: 'Distribuire, fare gruppi e calcolare', imp: { modalita: 'alterna', divisoreMax: 5, quozienteMax: 5, conResto: false } },
       { nome: 'Con il resto, distribuendo', imp: { modalita: 'distribuisci', divisoreMax: 5, quozienteMax: 5, conResto: true } },
       { nome: 'Con il resto, anche scritte, fino a 10', imp: { modalita: 'alterna', divisoreMax: 5, quozienteMax: 10, conResto: true } }
     ],
+    scheda: function (opz, quanti) {
+      var lista = [];
+      for (var i = 0; i < quanti; i++) {
+        var es = generaEs(opz, 'calcola');
+        lista.push({ tipo: 'riga', testo: es.dividendo + ' : ' + es.divisore + ' =' + (opz.conResto ? ' ______ resto' : ''),
+          soluzione: es.dividendo + ' : ' + es.divisore + ' = ' + es.quoziente + (es.resto ? ' resto ' + es.resto : '') });
+      }
+      return lista;
+    },
     avvia: avvia
   });
+
+  // Un esercizio adatto alle impostazioni (serve anche per le schede da stampare)
+  function generaEs(opz, modo) {
+        var d = C.casuale(2, opz.divisoreMax);
+        var q = C.casuale(1, opz.quozienteMax);
+        var r = opz.conResto ? C.casuale(0, d - 1) : 0;
+        if (modo !== 'calcola' && d * q + r > MAX_OGGETTI) q = Math.max(1, Math.floor((MAX_OGGETTI - r) / d));
+        return { modo: modo, divisore: d, quoziente: q, resto: r, dividendo: d * q + r };
+      }
+
+  // "nel 12", "nell'8"
+  function nel(n) { var c = String(n).charAt(0); return (c === '8' || n === 1 || n === 11 ? "nell'" : 'nel ') + n; }
 
   function avvia(area, opz, api) {
     var k = Impariamo.kit(area, opz, api);
@@ -183,11 +204,71 @@
         zonaDomande.appendChild(k.domanda(testi.quantiAvanzati, k.risposta(
           0, es.divisore - 1, es.resto,
           function () { finito(errori); },
-          function () { errori++; avviso.dici('Non ancora. ' + testi.contaAvanzati); }
+          function () { errori++; avviso.dici('Non ancora. ' + testi.contaAvanzati); },
+          { tipo: 'resto' }
         )));
       }
 
       prepara();
+    }
+
+    /* ---------- "Fare gruppi" ---------- */
+
+    // La divisione come contenenza: "Ogni gattino mangia 3 pesci: quanti gattini sfami con 12?"
+    // È lo stesso significato del "quante volte ci sta?" della divisione in colonna.
+    function gruppi(es, finito) {
+      var errori = 0;
+      var d = es.divisore;
+      var rimasti = es.dividendo;
+      scena.appendChild(api.consegna(t.senzaImmagini
+        ? ['In ogni scatola stanno ' + g.quanti(d) + '.', 'Riempi più scatole che puoi: tocca i pallini.']
+        : ['Ogni ' + t.animale + ' mangia ' + g.quanti(d) + '.', 'Dai da mangiare a più ' + t.animali + ' che puoi: tocca ' + t.iCibi + ' ' + t.cibi + '.']));
+      var mucchio = el('div', { classe: 'mucchio mucchio-tocca' });
+      for (var i = 0; i < es.dividendo; i++) {
+        mucchio.appendChild(el('button', { type: 'button', classe: 'pezzo', 'aria-label': k.maiuscola(t.cibo),
+          onclick: function (e) { metti(e.currentTarget); } }, [k.oggetto()]));
+      }
+      var zonaCiotole = el('div', { classe: 'scatole' });
+      var avviso = api.messaggio();
+      var zonaDomande = el('div');
+      [mucchio, zonaCiotole, avviso, zonaDomande].forEach(function (n) { scena.appendChild(n); });
+      var attuale = null, dentro = 0, sfamati = 0;
+      function nuovaCiotola() {
+        attuale = k.ciotola({ quanti: 1 });
+        dentro = 0;
+        zonaCiotole.appendChild(attuale.nodo);
+      }
+      nuovaCiotola();
+      function metti(pezzo) {
+        mucchio.removeChild(pezzo);
+        rimasti--;
+        attuale.dentro.appendChild(k.oggetto());
+        dentro++;
+        if (dentro < d) return;
+        sfamati++;
+        attuale.nodo.classList.add('piena');
+        if (rimasti >= d) {
+          nuovaCiotola();
+          avviso.dici(t.senzaImmagini ? 'Scatola piena! Eccone un\'altra.' : k.maiuscola(t.il) + (t.il.slice(-1) === "'" ? '' : ' ') + t.animale + ' è sazio! Ne arriva un altro.');
+          return;
+        }
+        // Non ne restano abbastanza per un altro gruppo: sono il resto
+        Array.prototype.forEach.call(mucchio.children, function (p) { p.disabled = true; });
+        if (!rimasti) mucchio.hidden = true; else mucchio.classList.add('avanzo');
+        avviso.dici(rimasti
+          ? 'Ne restano ' + rimasti + ': non bastano per ' + (t.senzaImmagini ? 'un\'altra scatola' : 'un altro ' + t.animale) + '.'
+          : 'Hai finito!');
+        zonaDomande.appendChild(k.domanda(t.senzaImmagini ? 'Quante scatole hai riempito?' : 'Quanti ' + t.animali + ' hai sfamato?',
+          k.risposta(0, opz.quozienteMax, sfamati,
+            function () {
+              if (!es.resto) return finito(errori);
+              zonaDomande.appendChild(k.domanda(g.Quanti + ' sono ' + g.p('avanzat') + '?', k.risposta(0, d - 1, es.resto,
+                function () { finito(errori); },
+                function () { errori++; avviso.dici('Non ancora. ' + testi.contaAvanzati); },
+                { tipo: 'resto' })));
+            },
+            function () { errori++; avviso.dici('Non ancora. Conta ' + (t.senzaImmagini ? 'le scatole piene.' : t.tutti + ' ' + t.animali + '.')); })));
+      }
     }
 
     /* ---------- "Calcola" ---------- */
@@ -239,18 +320,18 @@
     }
 
     k.sessione({
-      modi: ['distribuisci', 'calcola'],
-      genera: function (modo) {
-        var d = k.casuale(2, opz.divisoreMax);
-        var q = k.casuale(1, opz.quozienteMax);
-        var r = opz.conResto ? k.casuale(0, d - 1) : 0;
-        if (modo === 'distribuisci' && d * q + r > MAX_OGGETTI) q = Math.max(1, Math.floor((MAX_OGGETTI - r) / d));
-        return { divisore: d, quoziente: q, resto: r, dividendo: d * q + r };
-      },
+      modi: ['distribuisci', 'gruppi', 'calcola'],
+      genera: function (modo) { return generaEs(opz, modo); },
+      tipoErrore: function (modo) { return modo === 'calcola' ? 'calcolo' : 'conteggio'; },
       chiave: function (es) { return es.dividendo + ':' + es.divisore; },
-      esegui: { distribuisci: distribuisci, calcola: calcola },
+      esegui: { distribuisci: distribuisci, gruppi: gruppi, calcola: calcola },
       scritta: function (es) {
-        return es.dividendo + ' : ' + es.divisore + ' = ' + es.quoziente + (es.resto ? ' resto ' + es.resto : '');
+        var operazione = es.dividendo + ' : ' + es.divisore + ' = ' + es.quoziente + (es.resto ? ' resto ' + es.resto : '');
+        var contrario = 'Al contrario: ' + es.quoziente + ' × ' + es.divisore + (es.resto ? ' + ' + es.resto : '') + ' = ' + es.dividendo;
+        // Dopo i gruppi: lo stesso fatto detto come nella divisione in colonna ("quante volte ci sta")
+        var volte = Impariamo.quaderno.il(es.divisore) + ' sta ' + es.quoziente + (es.quoziente === 1 ? ' volta ' : ' volte ') + nel(es.dividendo) +
+          (es.resto ? ' e avanza ' + es.resto : '') + '.';
+        return { operazione: operazione, dopo: es.modo === 'gruppi' ? [volte.charAt(0).toUpperCase() + volte.slice(1), contrario] : [contrario] };
       }
     });
   }

@@ -28,24 +28,78 @@
     { valore: false, testo: 'No' }
   ];
 
-  var IMPOSTAZIONI_GENERALI = [
-    { chiave: 'voce', etichetta: 'Lettura vocale delle consegne', predefinito: false, opzioni: SI_NO },
-    { chiave: 'suoni', etichetta: 'Suoni di conferma (leggeri)', predefinito: false, opzioni: SI_NO },
+  /*
+   * Le impostazioni d'uso quotidiano valgono per tutte le attività, così il docente
+   * le sceglie una volta sola. Ogni attività ha solo le sue regole di difficoltà,
+   * raccolte nelle "opzioni avanzate" e usate solo con "Difficoltà: scelgo io".
+   */
+  var IMPOSTAZIONI_ESERCIZI = [
     {
-      chiave: 'colori', etichetta: 'Colori', predefinito: 'vivaci',
-      opzioni: [{ valore: 'vivaci', testo: 'Vivaci' }, { valore: 'tenui', testo: 'Tenui (più calmi)' }]
+      chiave: 'lunghezza', etichetta: 'Esercizi per sessione', predefinito: 'media',
+      opzioni: [
+        { valore: 'breve', testo: 'Pochi' },
+        { valore: 'media', testo: 'Normali' },
+        { valore: 'lunga', testo: 'Tanti' }
+      ]
     },
-    { chiave: 'sfondi', etichetta: 'Sfondi illustrati', predefinito: true, opzioni: SI_NO },
+    {
+      chiave: 'tema', etichetta: 'Animali e cibo', predefinito: 'scelta',
+      opzioni: [
+        { valore: 'scelta', testo: 'Li sceglie il ragazzo' },
+        { valore: 'animali', testo: 'A caso (uguali per tutta la sessione)' },
+        { valore: 'gatti', testo: 'Gattini e pesci' },
+        { valore: 'cani', testo: 'Cagnolini e ossi' },
+        { valore: 'conigli', testo: 'Coniglietti e carote' },
+        { valore: 'scoiattoli', testo: 'Scoiattoli e ghiande' },
+        { valore: 'pallini', testo: 'Pallini e scatole' }
+      ]
+    },
+    {
+      chiave: 'aiuto', etichetta: 'Disegni e tabelline di aiuto', predefinito: 'richiesta',
+      opzioni: [
+        { valore: 'sempre', testo: 'Sempre' },
+        { valore: 'richiesta', testo: 'Su richiesta o dopo un errore' },
+        { valore: 'mai', testo: 'Mai' }
+      ]
+    },
+    {
+      chiave: 'guida', etichetta: 'Operazioni in colonna', predefinito: 'guidato',
+      opzioni: [
+        { valore: 'guidato', testo: 'Guidate: una domanda per ogni passo' },
+        { valore: 'semiguidato', testo: 'Semiguidate: solo la colonna evidenziata' },
+        { valore: 'autonomo', testo: 'Da solo: scrive tutto, poi si controlla' }
+      ]
+    },
     {
       chiave: 'avanzamento', etichetta: 'Passaggio al livello successivo', predefinito: 'docente',
       opzioni: [
         { valore: 'docente', testo: 'Lo decido io (il programma propone)' },
         { valore: 'automatico', testo: 'Automatico' }
       ]
+    }
+  ];
+  var IMPOSTAZIONI_ASPETTO = [
+    { chiave: 'voce', etichetta: 'Lettura vocale delle consegne', predefinito: false, opzioni: SI_NO },
+    { chiave: 'pittogrammi', etichetta: 'Pittogrammi CAA nelle consegne', predefinito: false, opzioni: SI_NO },
+    { chiave: 'suoni', etichetta: 'Suoni di conferma (leggeri)', predefinito: false, opzioni: SI_NO },
+    {
+      chiave: 'colori', etichetta: 'Colori', predefinito: 'vivaci',
+      opzioni: [{ valore: 'vivaci', testo: 'Vivaci' }, { valore: 'tenui', testo: 'Tenui (più calmi)' }]
     },
+    { chiave: 'sfondi', etichetta: 'Sfondi illustrati', predefinito: true, opzioni: SI_NO },
     { chiave: 'caratteriGrandi', etichetta: 'Caratteri più grandi', predefinito: false, opzioni: SI_NO },
     { chiave: 'altoContrasto', etichetta: 'Alto contrasto', predefinito: false, opzioni: SI_NO }
   ];
+  var IMPOSTAZIONI_GENERALI = IMPOSTAZIONI_ESERCIZI.concat(IMPOSTAZIONI_ASPETTO);
+
+  // Tipi di errore registrati dalle attività, con il nome da mostrare al docente
+  var NOMI_ERRORI = {
+    conteggio: 'contare gli oggetti', calcolo: 'il calcolo', resto: 'il resto',
+    somma: 'le somme', unita: 'scrivere solo le unità (riporto)', prodotto: 'le tabelline',
+    differenza: 'le sottrazioni', decisione: 'capire se serve il prestito',
+    'ci-sta': 'capire se il divisore ci sta', 'quante-volte': 'quante volte ci sta',
+    operazione: 'scegliere l\'operazione', cifra: 'scrivere le cifre da solo'
+  };
 
   var elencoAttivita = [];
   var elencoAree = [];          // macro aree del menu: una per operazione
@@ -163,6 +217,15 @@
   function opzioniEffettive(a) {
     var opz = {};
     Object.keys(impostazioni[a.id]).forEach(function (k) { opz[k] = impostazioni[a.id][k]; });
+    // Impostazioni comuni a tutte le attività
+    var g = impostazioni.generale;
+    var quanti = a.esercizi || [3, 5, 10];
+    var indice = { breve: 0, media: 1, lunga: 2 }[g.lunghezza];
+    opz.numeroEsercizi = quanti[indice === undefined ? 1 : indice];
+    opz.tema = g.tema;
+    opz.aiuto = g.aiuto;
+    opz.guida = g.guida;
+    opz.aiutoTabellina = { sempre: 'sempre', richiesta: 'errore', mai: 'mai' }[g.aiuto]; // tabellina di aiuto nella divisione in colonna
     if (inPercorso(a)) {
       var imp = a.livelli[statoDi(a).livello].imp;
       Object.keys(imp).forEach(function (k) { opz[k] = imp[k]; });
@@ -302,6 +365,10 @@
       parti.push(el('span', { classe: i === 0 ? 'consegna-cosa' : 'consegna-come', testo: r }));
     });
     var fumetto = el('p', { classe: figura ? 'fumetto' : null }, parti);
+    if (impostazioni.generale.pittogrammi) {
+      var picto = pittogrammi(righe.join(' '));
+      if (picto) fumetto.appendChild(picto);
+    }
     var riga = el('div', { classe: 'consegna' + (figura ? ' con-mascotte' : '') }, [figura, fumetto]);
     var tutto = righe.join(' ');
     if (impostazioni.generale.voce && 'speechSynthesis' in window) {
@@ -312,6 +379,39 @@
       parla(tutto);
     }
     return riga;
+  }
+
+  /*
+   * Pittogrammi CAA (Comunicazione Aumentativa Alternativa) sotto la consegna: uno per
+   * ogni azione nominata, nell'ordine in cui compare. I pittogrammi sono di ARASAAC
+   * (autore Sergio Palao, licenza CC BY-NC-SA), salvati in img/caa/.
+   */
+  var PITTOGRAMMI = [
+    { re: /\b(dividi|divisione|diviso)/i, file: 'dividere', parola: 'dividere' },
+    { re: /\b(dagli|dai |dare|porti)/i, file: 'dare', parola: 'dare' },
+    { re: /\b(metti|mettici|mettili|mettile)/i, file: 'mettere', parola: 'mettere' },
+    { re: /\b(mangia|sfam)/i, file: 'mangiare', parola: 'mangiare' },
+    { re: /\b(togli|meno|resta)/i, file: 'togliere', parola: 'togliere' },
+    { re: /\b(apri)/i, file: 'aprire', parola: 'aprire' },
+    { re: /\b(conta|contare)/i, file: 'contare', parola: 'contare' },
+    { re: /\b(scrivi|scrivilo)/i, file: 'scrivere', parola: 'scrivere' },
+    { re: /\b(quant[ieoa])\b/i, file: 'quanti', parola: 'quanti?' }
+  ];
+
+  function pittogrammi(testo) {
+    var trovati = [];
+    PITTOGRAMMI.forEach(function (p) {
+      var m = p.re.exec(testo);
+      if (m) trovati.push({ p: p, pos: m.index });
+    });
+    if (!trovati.length) return null;
+    trovati.sort(function (x, y) { return x.pos - y.pos; });
+    return el('span', { classe: 'pittogrammi', 'aria-hidden': 'true' }, trovati.slice(0, 3).map(function (t) {
+      return el('span', { classe: 'pittogramma' }, [
+        el('img', { src: 'img/caa/' + t.p.file + '.png', alt: '', draggable: 'false' }),
+        el('span', { testo: t.p.parola })
+      ]);
+    }));
   }
 
   // Riga per i suggerimenti e gli avvisi; p.dici(testo) la aggiorna e la legge
@@ -329,14 +429,20 @@
     var nodo = el('div', { classe: 'avanzamento' });
     return {
       nodo: nodo,
+      // Agenda visiva: [✓][✓][3][4][5][Finito]. Si vede quanto è stato fatto,
+      // dove si è e quanto manca prima della fine.
       aggiorna: function (indice) {
         nodo.innerHTML = '';
-        nodo.appendChild(el('span', { testo: 'Esercizio ' + (indice + 1) + ' di ' + totale }));
-        var puntini = el('span', { classe: 'puntini', 'aria-hidden': 'true' });
+        nodo.appendChild(el('span', { classe: 'agenda-testo', testo: 'Esercizio ' + (indice + 1) + ' di ' + totale }));
+        var agenda = el('span', { classe: 'agenda', 'aria-hidden': 'true' });
         for (var i = 0; i < totale; i++) {
-          puntini.appendChild(el('span', { classe: 'puntino' + (i < indice ? ' fatto' : i === indice ? ' attuale' : '') }));
+          agenda.appendChild(el('span', {
+            classe: 'agenda-passo' + (i < indice ? ' fatto' : i === indice ? ' attuale' : ''),
+            testo: i < indice ? '\u2713' : String(i + 1)
+          }));
         }
-        nodo.appendChild(puntini);
+        agenda.appendChild(el('span', { classe: 'agenda-passo agenda-fine', testo: 'Finito' }));
+        nodo.appendChild(agenda);
       }
     };
   }
@@ -344,7 +450,15 @@
   // Riquadro verde di fine esercizio, sempre uguale: "Esatto!", l'operazione, "Avanti".
   // "scritta" può essere un testo o due righe: [riga di collegamento, operazione],
   // per esempio ['3 + 3 + 3 + 3 = 12', '3 × 4 = 12'].
+  // "scritta" può essere anche { prima: [...], operazione: '...', dopo: [...] }: le righe
+  // prima e dopo collegano le operazioni ("Al contrario: 12 − 5 = 7", "La prova: ...").
   function esito(contenitore, scritta, ultimo, alAvanti) {
+    var prima = [], dopo = [];
+    if (scritta && typeof scritta === 'object' && !scritta.length) {
+      prima = scritta.prima || [];
+      dopo = scritta.dopo || [];
+      scritta = prima.concat([scritta.operazione]);
+    }
     var righe = typeof scritta === 'string' ? [scritta] : scritta;
     var avanti = el('button', {
       type: 'button', classe: 'bottone',
@@ -358,11 +472,13 @@
       ])
     ].concat(righe.map(function (r, i) {
       return el('p', { classe: i === righe.length - 1 ? 'operazione' : 'operazione-ponte', testo: r });
+    })).concat(dopo.map(function (r) {
+      return el('p', { classe: 'operazione-ponte operazione-dopo', testo: r });
     })).concat([avanti]));
     contenitore.appendChild(riquadro);
     if (riquadro.scrollIntoView) riquadro.scrollIntoView({ block: 'nearest' });
     avanti.focus();
-    parla('Esatto! ' + righe.join('. '));
+    parla('Esatto! ' + righe.concat(dopo).join('. '));
   }
 
   /* ---------- Tastiera fisica ---------- */
@@ -465,7 +581,32 @@
     contenuto.appendChild(griglia);
   }
 
-  function avviaAttivita(a) {
+  var erroriSessione = {};
+
+  // Il ragazzo sceglie con quali animali giocare: una scelta sua rende la sessione
+  // più motivante e resta prevedibile (gli animali non cambiano fino alla fine)
+  function mostraSceltaTema(a) {
+    pulisci(a.titolo, precedenteDi(a));
+    preparaAttivita(a);
+    contenuto.appendChild(consegna(['Con chi vuoi giocare?', 'Tocca gli animali che preferisci.']));
+    var griglia = el('div', { classe: 'menu scelta-tema' });
+    Impariamo.comune.TEMI_SCELTA.forEach(function (t) {
+      griglia.appendChild(el('button', {
+        type: 'button', classe: 'scheda-attivita', 'data-tema': t.id,
+        onclick: function () { avviaAttivita(a, t.id); }
+      }, [
+        el('img', { classe: 'scheda-immagine', src: 'img/' + t.animale + '.png', alt: '', draggable: 'false' }),
+        el('span', { classe: 'scheda-titolo', testo: t.testo })
+      ]));
+    });
+    contenuto.appendChild(griglia);
+  }
+
+  function avviaAttivita(a, temaScelto) {
+    var opz = opzioniEffettive(a);
+    if (a.usaTemi && opz.tema === 'scelta' && !temaScelto) return mostraSceltaTema(a);
+    if (temaScelto) opz.tema = temaScelto;
+    erroriSessione = {};
     pulisci(a.titolo, precedenteDi(a));
     preparaAttivita(a);
     var area = el('div', { classe: 'area-attivita' });
@@ -473,7 +614,7 @@
     if (inPercorso(a)) {
       area.appendChild(el('p', { classe: 'livello-attuale', testo: 'Livello ' + (statoDi(a).livello + 1) + ' di ' + a.livelli.length }));
     }
-    a.avvia(area, opzioniEffettive(a), {
+    a.avvia(area, opz, {
       el: el,
       parla: parla,
       suono: suono,
@@ -482,6 +623,8 @@
       avanzamento: avanzamento,
       esito: esito,
       tastiera: function (gestore) { gestoreTasti = gestore; },
+      // Le attività segnalano il tipo di ogni errore: il docente vede dove si inceppa il ragazzo
+      errore: function (tipo) { erroriSessione[tipo] = (erroriSessione[tipo] || 0) + 1; },
       fine: function (risultato) { mostraFine(a, risultato); }
     });
   }
@@ -496,6 +639,11 @@
       quando: new Date().toISOString()
     });
     var annuncio = null;
+    if (a.livelli) {
+      var stErr = statoDi(a);
+      stErr.errori = (stErr.errori || []).concat([erroriSessione]).slice(-5);
+      scrivi(CHIAVE_LIVELLI, statoLivelli);
+    }
     if (inPercorso(a)) {
       var st = statoDi(a);
       st.sessioni.push({ totale: risultato.totale, alPrimoTentativo: risultato.alPrimoTentativo });
@@ -556,17 +704,150 @@
         }))
       ]));
     }
-    contenuto.appendChild(sezioneImpostazioni('Generali', IMPOSTAZIONI_GENERALI, impostazioni.generale));
+    contenuto.appendChild(sezioneImpostazioni('Esercizi, per tutte le attività', IMPOSTAZIONI_ESERCIZI, impostazioni.generale));
+    contenuto.appendChild(sezionePercorso());
+    contenuto.appendChild(sezioneImpostazioni('Aspetto e voce', IMPOSTAZIONI_ASPETTO, impostazioni.generale));
+    contenuto.appendChild(el('section', { classe: 'sezione-impostazioni' }, [
+      el('h2', { testo: 'Schede da stampare' }),
+      el('p', { classe: 'nota-docente', testo: 'Esercizi su carta a quadretti, al livello a cui è arrivato il ragazzo, per continuare sul quaderno.' }),
+      el('div', { classe: 'riga-bottoni' }, [el('button', { type: 'button', classe: 'bottone secondario', testo: 'Prepara una scheda', onclick: mostraSchede })])
+    ]));
+    // Le regole di difficoltà di ogni attività: servono solo con "Difficoltà: scelgo io"
+    var avanzate = el('details', { classe: 'avanzate' }, [
+      el('summary', { testo: 'Opzioni avanzate: difficoltà scelta a mano' }),
+      el('p', { classe: 'nota-docente', testo: 'Di solito non servono: il percorso a livelli sceglie la difficoltà. Valgono solo per le attività in cui scegli "Difficoltà: scelgo io".' })
+    ]);
     elencoAttivita.forEach(function (a) {
-      if (a.impostazioni && a.impostazioni.length) {
-        var sezione = sezioneImpostazioni(nomeAttivita(a), a.impostazioni, impostazioni[a.id]);
-        if (a.livelli) sezione.insertBefore(bloccoLivello(a), sezione.children[1]);
-        contenuto.appendChild(sezione);
-      }
+      if (a.impostazioni && a.impostazioni.length) avanzate.appendChild(sezioneImpostazioni(nomeAttivita(a), a.impostazioni, impostazioni[a.id]));
     });
+    contenuto.appendChild(avanzate);
+    contenuto.appendChild(el('p', { classe: 'nota-docente crediti', testo:
+      'Pittogrammi: autore Sergio Palao, origine ARASAAC (arasaac.org), licenza CC BY-NC-SA, proprietà del Governo di Aragona (Spagna). ' +
+      'Immagini in pixel art generate con PixelLab.' }));
     contenuto.appendChild(el('div', { classe: 'riga-bottoni' }, [
       el('button', { type: 'button', classe: 'bottone', testo: 'Fatto', onclick: mostraMenu })
     ]));
+  }
+
+  /* ---------- Schede da stampare ---------- */
+
+  /*
+   * Ogni attività che lo prevede espone scheda(opz, n): n esercizi al suo livello attuale.
+   * Esercizio: { tipo: 'riga', testo, soluzione } oppure { tipo: 'colonna', a, b, segno,
+   * soluzione, righeVuote } oppure { tipo: 'divisione', a, b, soluzione }.
+   */
+  function mostraSchede() {
+    pulisci('Schede da stampare', { etichetta: 'Impostazioni', vai: mostraImpostazioni });
+    var conScheda = elencoAttivita.filter(function (a) { return a.scheda; });
+    var scelta = { attivita: conScheda[0], quanti: 9, soluzioni: true };
+    var foglio = el('div', { classe: 'foglio' });
+    function gruppo(etichetta, opzioni, chiave) {
+      var g = el('div', { classe: 'scelte', role: 'group', 'aria-label': etichetta });
+      opzioni.forEach(function (o) {
+        var b = el('button', { type: 'button', classe: 'scelta', testo: o.testo, 'aria-pressed': String(scelta[chiave] === o.valore),
+          onclick: function () {
+            scelta[chiave] = o.valore;
+            Array.prototype.forEach.call(g.children, function (c) { c.setAttribute('aria-pressed', String(c === b)); });
+            prepara();
+          } });
+        g.appendChild(b);
+      });
+      return el('div', { classe: 'impostazione' }, [el('span', { classe: 'impostazione-etichetta', testo: etichetta }), g]);
+    }
+    contenuto.appendChild(el('section', { classe: 'sezione-impostazioni solo-schermo' }, [
+      gruppo('Attività', conScheda.map(function (a) { return { valore: a, testo: nomeAttivita(a) }; }), 'attivita'),
+      gruppo('Esercizi', [6, 9, 12].map(function (n) { return { valore: n, testo: String(n) }; }), 'quanti'),
+      gruppo('Soluzioni in fondo', SI_NO, 'soluzioni'),
+      el('div', { classe: 'riga-bottoni' }, [
+        el('button', { type: 'button', classe: 'bottone secondario', testo: 'Altri esercizi', onclick: prepara }),
+        el('button', { type: 'button', classe: 'bottone', testo: 'Stampa', onclick: function () { window.print(); } })
+      ])
+    ]));
+    contenuto.appendChild(foglio);
+
+    function prepara() {
+      var a = scelta.attivita;
+      var opz = opzioniEffettive(a);
+      var esercizi = a.scheda(opz, scelta.quanti);
+      foglio.innerHTML = '';
+      foglio.appendChild(el('p', { classe: 'foglio-intestazione', testo: 'Nome ______________________     Data ____________' }));
+      foglio.appendChild(el('h2', { classe: 'foglio-titolo', testo: nomeAttivita(a) + (a.livelli && inPercorso(a) ? ' \u00B7 livello ' + (statoDi(a).livello + 1) + ': ' + a.livelli[statoDi(a).livello].nome : '') }));
+      var griglia = el('div', { classe: 'foglio-esercizi' });
+      esercizi.forEach(function (e, i) { griglia.appendChild(disegnaEsercizio(e, i + 1)); });
+      foglio.appendChild(griglia);
+      if (scelta.soluzioni) {
+        foglio.appendChild(el('div', { classe: 'foglio-soluzioni' }, [
+          el('h3', { testo: 'Soluzioni' }),
+          el('p', { testo: esercizi.map(function (e, i) { return (i + 1) + ') ' + e.soluzione; }).join('   ') })
+        ]));
+      }
+    }
+
+    function disegnaEsercizio(e, numero) {
+      var box = el('div', { classe: 'foglio-esercizio' }, [el('span', { classe: 'foglio-numero', testo: numero + ')' })]);
+      if (e.tipo === 'riga') {
+        box.appendChild(el('p', { classe: 'foglio-riga', testo: e.testo + ' ______' }));
+        return box;
+      }
+      var Q = Impariamo.quaderno;
+      if (e.tipo === 'colonna') {
+        var W = Math.max(String(e.a).length, String(e.b).length) + (e.extra || 1);
+        var q = Q.crea(el, W);
+        var righe = [{ cifre: Q.allinea(e.a, W - 1) }, { cifre: Q.allinea(e.b, W - 1), segno: e.segno, linea: true }];
+        for (var r = 0; r < (e.righeVuote || 2); r++) righe.push({ cifre: {} });
+        q.disegna(righe, []);
+        box.appendChild(q.nodo);
+        return box;
+      }
+      // Divisione: dividendo a sinistra, divisore oltre la riga verticale, spazio sotto
+      var n = String(e.a).length;
+      var lavagna = el('div', { classe: 'colonna-lavagna quaderno' });
+      var g = el('div', { classe: 'colonna-griglia' });
+      g.style.gridTemplateColumns = 'repeat(' + (n + 1) + ', var(--cella))';
+      for (var riga = 0; riga < n * 2 + 1; riga++) {
+        for (var c = 0; c <= n; c++) {
+          g.appendChild(el('span', { classe: 'cella', testo: riga === 0 && c > 0 ? String(e.a).charAt(c - 1) : '' }));
+        }
+      }
+      lavagna.appendChild(g);
+      lavagna.appendChild(el('div', { classe: 'colonna-destra' }, [
+        el('div', { classe: 'colonna-divisore' }, String(e.b).split('').map(function (x) { return el('span', { classe: 'cella', testo: x }); })),
+        el('div', { classe: 'colonna-quoziente' })
+      ]));
+      box.appendChild(lavagna);
+      return box;
+    }
+
+    prepara();
+  }
+
+  // Il percorso di tutte le attività in una sola sezione, raggruppato per area
+  function sezionePercorso() {
+    var sezione = el('section', { classe: 'sezione-impostazioni' }, [el('h2', { testo: 'Percorso' })]);
+    var gruppi = elencoAree.map(function (area) {
+      return { titolo: area.titolo, attivita: elencoAttivita.filter(function (a) { return a.area === area.id && a.livelli; }) };
+    });
+    var senzaArea = elencoAttivita.filter(function (a) { return !areaDi(a) && a.livelli; });
+    if (senzaArea.length) gruppi.push({ titolo: 'Altro', attivita: senzaArea });
+    gruppi.forEach(function (gr) {
+      if (!gr.attivita.length) return;
+      sezione.appendChild(el('h3', { classe: 'percorso-area', testo: gr.titolo }));
+      gr.attivita.forEach(function (a) { sezione.appendChild(bloccoLivello(a)); });
+    });
+    return sezione;
+  }
+
+  // Gli errori più frequenti nelle ultime sessioni, a parole
+  function testoErrori(a) {
+    var somma = {};
+    (statoDi(a).errori || []).forEach(function (e) {
+      Object.keys(e).forEach(function (t) { somma[t] = (somma[t] || 0) + e[t]; });
+    });
+    var tipi = Object.keys(somma).sort(function (x, y) { return somma[y] - somma[x]; }).slice(0, 3);
+    if (!tipi.length) return '';
+    return 'Errori più frequenti nelle ultime sessioni: ' + tipi.map(function (t) {
+      return (NOMI_ERRORI[t] || t) + ' (' + somma[t] + ')';
+    }).join(', ') + '.';
   }
 
   function nomeAttivita(a) {
@@ -588,22 +869,33 @@
     function disegna() {
       var st = statoDi(a);
       blocco.innerHTML = '';
-      blocco.appendChild(el('p', { classe: 'livello-titolo', testo: 'Percorso: livello ' + (st.livello + 1) + ' di ' + a.livelli.length }));
-      blocco.appendChild(el('ol', { classe: 'elenco-livelli' }, a.livelli.map(function (l, i) {
-        return el('li', { classe: i === st.livello ? 'livello-corrente' : null, testo: l.nome });
-      })));
-      blocco.appendChild(el('p', { classe: 'nota-docente', testo: st.sessioni.length
-        ? 'Ultime sessioni a questo livello (risolti al primo tentativo): ' + st.sessioni.map(function (x) { return x.alPrimoTentativo + ' su ' + x.totale; }).join(', ') + '.'
-        : 'Nessuna sessione ancora a questo livello.' }));
+      // Una riga sola: nome, livello e due piccoli pulsanti per cambiarlo
+      blocco.appendChild(el('div', { classe: 'livello-riga' }, [
+        el('p', { classe: 'livello-titolo' }, [
+          el('strong', { testo: (a.etichetta || a.titolo) + ': ' }),
+          'livello ' + (st.livello + 1) + ' di ' + a.livelli.length + ' \u00B7 ' + a.livelli[st.livello].nome
+        ]),
+        el('span', { classe: 'livello-pulsanti' }, [
+          el('button', { type: 'button', classe: 'scelta piccola', testo: '\u25C0', 'aria-label': 'Livello precedente', title: 'Livello precedente',
+            disabled: st.livello === 0, onclick: function () { cambiaLivello(a, st.livello - 1); disegna(); aggiornaSegnale(); } }),
+          el('button', { type: 'button', classe: 'scelta piccola', testo: '\u25B6', 'aria-label': 'Livello successivo', title: 'Livello successivo',
+            disabled: st.livello === a.livelli.length - 1, onclick: function () { cambiaLivello(a, st.livello + 1); disegna(); aggiornaSegnale(); } })
+        ])
+      ]));
+      // L'elenco completo dei livelli resta chiuso, per non affollare la pagina
+      blocco.appendChild(el('details', { classe: 'dettagli-livelli' }, [
+        el('summary', { testo: 'Tutti i livelli' }),
+        el('ol', { classe: 'elenco-livelli' }, a.livelli.map(function (l, i) {
+          return el('li', { classe: i === st.livello ? 'livello-corrente' : null, testo: l.nome });
+        }))
+      ]));
+      var errori = testoErrori(a);
+      if (errori) blocco.appendChild(el('p', { classe: 'nota-docente errori-frequenti', testo: errori }));
+      if (st.sessioni.length) blocco.appendChild(el('p', { classe: 'nota-docente', testo:
+        'Ultime sessioni a questo livello (risolti al primo tentativo): ' + st.sessioni.map(function (x) { return x.alPrimoTentativo + ' su ' + x.totale; }).join(', ') + '.' }));
       var v = valuta(a);
       if (v) blocco.appendChild(el('p', { classe: 'proposta-livello ' + v, testo: k(testoProposta(a)) }));
       if (!inPercorso(a)) blocco.appendChild(el('p', { classe: 'nota-docente', testo: 'Il percorso vale solo con "Difficoltà: Percorso a livelli".' }));
-      blocco.appendChild(el('div', { classe: 'riga-bottoni' }, [
-        el('button', { type: 'button', classe: 'scelta', testo: '\u2190 Livello precedente', disabled: st.livello === 0,
-          onclick: function () { cambiaLivello(a, st.livello - 1); disegna(); aggiornaSegnale(); } }),
-        el('button', { type: 'button', classe: 'scelta', testo: 'Livello successivo \u2192', disabled: st.livello === a.livelli.length - 1,
-          onclick: function () { cambiaLivello(a, st.livello + 1); disegna(); aggiornaSegnale(); } })
-      ]));
     }
     function k(t) { return t.charAt(0).toUpperCase() + t.slice(1) + '.'; }
     disegna();

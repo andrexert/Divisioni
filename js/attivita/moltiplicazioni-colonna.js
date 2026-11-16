@@ -23,13 +23,13 @@
     immagine: 'img/gufo.png',
     sfondo: 'img/sfondo-bosco.png',
     colore: '#8b5cf6',
+    esercizi: [2, 3, 5],   // pochi, normali, tanti: le operazioni in colonna sono lunghe
     impostazioni: [
       Q.impostazioneCifre('Cifre del numero da moltiplicare', [2, 3], 2),
       {
         chiave: 'moltiplicatore', etichetta: 'Si moltiplica per un numero di', predefinito: 1,
         opzioni: [{ valore: 1, testo: '1 cifra' }, { valore: 2, testo: '2 cifre' }]
-      },
-      { chiave: 'numeroEsercizi', etichetta: 'Esercizi per volta', predefinito: 3, opzioni: C.opzioniNumeriche([2, 3, 5]) }
+      }
     ],
     // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
     livelli: [
@@ -39,6 +39,15 @@
       { nome: '2 cifre per 2 cifre', imp: { cifre: 2, moltiplicatore: 2, senzaRiporto: false } },
       { nome: '3 cifre per 2 cifre', imp: { cifre: 3, moltiplicatore: 2, senzaRiporto: false } }
     ],
+    scheda: function (opz, quanti) {
+      var lista = [];
+      for (var i = 0; i < quanti; i++) {
+        var es = genera(opz);
+        lista.push({ tipo: 'colonna', a: es.a, b: es.b, segno: '×', extra: es.m, righeVuote: es.m === 2 ? 4 : 2,
+          soluzione: es.a + ' × ' + es.b + ' = ' + es.a * es.b });
+      }
+      return lista;
+    },
     avvia: avvia
   });
 
@@ -97,7 +106,11 @@
           righe.push({ cifre: copia(parz[1]), segno: '+', linea: true });
           righe.push({ cifre: copia(somma) });
         }
-        if (attesa) righe[attesa.riga].cifre[attesa.col] = { testo: '?', classi: ['da-scrivere'] };
+        if (attesa) {
+          var prima = righe[attesa.riga].cifre[attesa.col];
+          var daRivedere = prima && typeof prima === 'object' && prima.classi && prima.classi.indexOf('sbagliata') >= 0;
+          righe[attesa.riga].cifre[attesa.col] = { testo: '?', classi: ['da-scrivere'].concat(daRivedere ? ['sbagliata'] : []) };
+        }
         quad.disegna(righe, evidenzia);
       }
 
@@ -116,6 +129,25 @@
         if (riporto) evidenzia.push([1, ca]);
         attesa = { riga: RIGA_P[r], col: col };
         disegna();
+        if (semi) {
+          // Semiguidato: si vedono le cifre da moltiplicare, il ragazzo scrive la cifra
+          var ultimaCifra = i === es.n - 1;
+          return passo.numero(
+            ['Moltiplica le cifre evidenziate.', ultimaCifra ? 'Scrivi tutto il risultato.' : 'Scrivi la cifra del risultato.'],
+            ultimaCifra ? v : v % 10,
+            function () { return 'Non ancora. Fai ' + x + ' × ' + y + (riporto ? ' e aggiungi il riporto ' + riporto : '') + (ultimaCifra || v < 10 ? '.' : ': scrivi solo le unità.'); },
+            function () {
+              if (ultimaCifra) { scrivi(parz[r], v, col); attesa = null; return rigaFinita(r); }
+              parz[r][col] = String(v % 10);
+              attesa = null;
+              var rip = Math.floor(v / 10);
+              if (rip) riporti[ca - 1] = String(rip);
+              disegna();
+              moltiplica(r, i + 1, rip);
+              if (rip) { passo.avviso.dici(Il(rip) + ' va in alto, sopra la cifra dopo: è il riporto.'); passo.mostraDecine(v); }
+            },
+            'prodotto');
+        }
         passo.numero(
           riporto ? ['Quanto fa ' + x + ' × ' + y + ' + ' + riporto + '?', 'Moltiplica, poi aggiungi il riporto ' + riporto + '.']
             : 'Quanto fa ' + x + ' × ' + y + '?',
@@ -144,11 +176,13 @@
                   disegna();
                   passo.avviso.dici(Il(rip) + ' va in alto, sopra la cifra dopo: è il riporto.');
                   moltiplica(r, i + 1, rip);
-                }
+                },
+                'unita'
               );
               passo.mostraDecine(v);
             }
-          }
+          },
+          'prodotto'
         );
       }
 
@@ -224,11 +258,13 @@
                   disegna();
                   passo.avviso.dici('L\'1 va in alto, nella colonna dopo: è il riporto.');
                   sommaColonna(j - 1, 1);
-                }
+                },
+                'unita'
               );
               passo.mostraDecine(s);
             }
-          }
+          },
+          'somma'
         );
       }
 
@@ -240,7 +276,25 @@
         finito(passo.errori());
       }
 
-      moltiplica(0, 0, 0);
+      // Guida: semiguidato, oppure "da solo" (con il moltiplicatore a due cifre il quaderno
+      // serve per le due righe, quindi "da solo" diventa semiguidato)
+      var semi = opz.guida === 'semiguidato' || (opz.guida === 'autonomo' && es.m === 2);
+      if (opz.guida === 'autonomo' && es.m === 1) daSolo(); else moltiplica(0, 0, 0);
+
+      function daSolo() {
+        var p = String(es.a * es.b);
+        var colonne = [];
+        for (var i = 0; i < p.length; i++) colonne.push(ultima - i);
+        passo.liberi(['Scrivi il risultato.', 'Comincia dalle unità, a destra. Poi premi OK.'], colonne, p.split('').reverse(),
+          function (valori, sbagliate, cursore) {
+            parz[0] = {};
+            Object.keys(sbagliate).forEach(function (c) { parz[0][c] = { testo: '', classi: ['sbagliata'] }; });
+            Object.keys(valori).forEach(function (c) { parz[0][c] = { testo: valori[c], classi: sbagliate[c] ? ['sbagliata'] : [] }; });
+            attesa = cursore === null ? null : { riga: RIGA_P[0], col: cursore };
+            disegna();
+          },
+          termina);
+      }
     }
 
     k.sessione({
@@ -248,7 +302,10 @@
       genera: function () { return genera(opz); },
       chiave: function (es) { return es.a + 'x' + es.b; },
       esegui: { colonna: esercizio },
-      scritta: function (es) { return es.a + ' × ' + es.b + ' = ' + es.a * es.b; }
+      scritta: function (es) {
+        // Il collegamento con la divisione: la moltiplicazione al contrario
+        return { operazione: es.a + ' × ' + es.b + ' = ' + es.a * es.b, dopo: ['Al contrario: ' + es.a * es.b + ' : ' + es.b + ' = ' + es.a] };
+      }
     });
   }
 })();

@@ -27,6 +27,7 @@
     sfondo: 'img/sfondo-orto.png',
     colore: '#db2777',
     descrizione: 'Gruppi uguali e tabelline',
+    usaTemi: true,
     impostazioni: [
       {
         chiave: 'modalita', etichetta: 'Tipo di esercizio', predefinito: 'gruppi',
@@ -36,16 +37,13 @@
           { valore: 'alterna', testo: 'Alterna' }
         ]
       },
-      C.impostazioneTema('Animali e cibo'),
       {
         chiave: 'tabellina', etichetta: 'Tabelline', predefinito: 'fino5',
         opzioni: [
           { valore: 'fino5', testo: 'Dal 2 al 5' },
           { valore: 'fino10', testo: 'Dal 2 al 10' }
         ].concat([2, 3, 4, 5, 6, 7, 8, 9, 10].map(function (n) { return { valore: n, testo: 'Del ' + n }; }))
-      },
-      C.impostazioneEsercizi(),
-      C.impostazioneAiuto('Aiuto in "Tabelline" (conta a salti)')
+      }
     ],
     // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
     livelli: [
@@ -55,8 +53,25 @@
       { nome: 'Gruppi e tabelline, fino al 10', imp: { modalita: 'alterna', tabellina: 'fino10' } },
       { nome: 'Tabelline fino al 10', imp: { modalita: 'tabelline', tabellina: 'fino10' } }
     ],
+    scheda: function (opz, quanti) {
+      var lista = [];
+      for (var i = 0; i < quanti; i++) {
+        var es = generaEs(opz, 'tabelline');
+        lista.push({ tipo: 'riga', testo: es.n + ' × ' + es.volte + ' =', soluzione: es.n + ' × ' + es.volte + ' = ' + es.prodotto });
+      }
+      return lista;
+    },
     avvia: avvia
   });
+
+  // Un esercizio adatto alle impostazioni (serve anche per le schede da stampare)
+  function generaEs(opz, modo) {
+        var n = typeof opz.tabellina === 'number' ? opz.tabellina : C.casuale(2, opz.tabellina === 'fino10' ? 10 : 5);
+        var volte;
+        if (modo === 'gruppi') volte = Math.min(C.casuale(2, 5), Math.floor(MAX_OGGETTI / n));
+        else volte = C.casuale(1, 10);
+        return { modo: modo, n: n, volte: volte, prodotto: n * volte };
+      }
 
   function avvia(area, opz, api) {
     var k = Impariamo.kit(area, opz, api);
@@ -147,21 +162,17 @@
 
     k.sessione({
       modi: ['gruppi', 'tabelline'],
-      genera: function (modo) {
-        var n = typeof opz.tabellina === 'number' ? opz.tabellina : k.casuale(2, opz.tabellina === 'fino10' ? 10 : 5);
-        var volte;
-        if (modo === 'gruppi') volte = Math.min(k.casuale(2, 5), Math.floor(MAX_OGGETTI / n));
-        else volte = k.casuale(1, 10);
-        return { modo: modo, n: n, volte: volte, prodotto: n * volte };
-      },
+      genera: function (modo) { return generaEs(opz, modo); },
+      tipoErrore: function (modo) { return modo === 'tabelline' ? 'prodotto' : 'conteggio'; },
       chiave: function (es) { return es.n + 'x' + es.volte; },
       esegui: { gruppi: gruppi, tabelline: tabelline },
       scritta: function (es) {
         var finale = es.n + ' × ' + es.volte + ' = ' + es.prodotto;
-        if (es.modo !== 'gruppi') return finale;
+        // Il collegamento con la divisione: la moltiplicazione al contrario
+        if (es.modo !== 'gruppi') return { operazione: finale, dopo: ['Al contrario: ' + es.prodotto + ' : ' + es.n + ' = ' + es.volte] };
         var somma = [];
         for (var i = 0; i < es.volte; i++) somma.push(es.n);
-        return [somma.join(' + ') + ' = ' + es.prodotto, finale];
+        return { prima: [somma.join(' + ') + ' = ' + es.prodotto], operazione: finale, dopo: ['Al contrario: ' + es.prodotto + ' : ' + es.volte + ' = ' + es.n] };
       }
     });
   }

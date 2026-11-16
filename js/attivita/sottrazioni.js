@@ -22,6 +22,7 @@
     sfondo: 'img/sfondo-stagno.png',
     colore: '#16a34a',
     descrizione: 'Animali e cibo da contare',
+    usaTemi: true,
     impostazioni: [
       {
         chiave: 'modalita', etichetta: 'Tipo di esercizio', predefinito: 'oggetti',
@@ -31,10 +32,7 @@
           { valore: 'alterna', testo: 'Alterna' }
         ]
       },
-      C.impostazioneTema('Animali e cibo'),
-      { chiave: 'numeroMax', etichetta: 'Si parte al massimo da', predefinito: 10, opzioni: C.opzioniNumeriche([5, 10, 20]) },
-      C.impostazioneEsercizi(),
-      C.impostazioneAiuto('Disegno di aiuto in "Calcola"')
+      { chiave: 'numeroMax', etichetta: 'Si parte al massimo da', predefinito: 10, opzioni: C.opzioniNumeriche([5, 10, 20]) }
     ],
     // Percorso a livelli: ogni gradino aggiunge una sola difficoltà
     livelli: [
@@ -44,8 +42,27 @@
       { nome: 'Da più di 10, aprendo il sacchetto', imp: { modalita: 'oggetti', numeroMax: 20, apriSacchetto: true } },
       { nome: 'Da 20, anche scritte', imp: { modalita: 'alterna', numeroMax: 20, apriSacchetto: false } }
     ],
+    scheda: function (opz, quanti) {
+      var lista = [];
+      for (var i = 0; i < quanti; i++) lista.push((function () { var es = generaEs(opz); return { tipo: 'riga', testo: es.a + ' − ' + es.b + ' =', soluzione: es.a + ' − ' + es.b + ' = ' + es.differenza }; })());
+      return lista;
+    },
     avvia: avvia
   });
+
+  // Un esercizio adatto alle impostazioni (serve anche per le schede da stampare)
+  function generaEs(opz) {
+        var a, b;
+        if (opz.apriSacchetto) {
+          // Si parte da 10-18 e se ne tolgono più di quelli sciolti: bisogna aprire il sacchetto
+          a = C.casuale(10, 18);
+          b = C.casuale(a - 10 + 1, 9);
+          return { a: a, b: b, differenza: a - b };
+        }
+        a = C.casuale(2, Math.min(opz.numeroMax, 19)); // fino a 19: al massimo un sacchetto
+        b = C.casuale(1, a - 1); // resta sempre almeno 1: il caso "0" si introduce più avanti
+        return { a: a, b: b, differenza: a - b };
+      }
 
   function avvia(area, opz, api) {
     var k = Impariamo.kit(area, opz, api);
@@ -158,21 +175,13 @@
 
     k.sessione({
       modi: ['oggetti', 'calcola'],
-      genera: function () {
-        var a, b;
-        if (opz.apriSacchetto) {
-          // Si parte da 10-18 e se ne tolgono più di quelli sciolti: bisogna aprire il sacchetto
-          a = k.casuale(10, 18);
-          b = k.casuale(a - 10 + 1, 9);
-          return { a: a, b: b, differenza: a - b };
-        }
-        a = k.casuale(2, Math.min(opz.numeroMax, 19)); // fino a 19: al massimo un sacchetto
-        b = k.casuale(1, a - 1); // resta sempre almeno 1: il caso "0" si introduce più avanti
-        return { a: a, b: b, differenza: a - b };
-      },
+      genera: function () { return generaEs(opz); },
       chiave: function (es) { return es.a + '-' + es.b; },
       esegui: { oggetti: conOggetti, calcola: calcola },
-      scritta: function (es) { return es.a + ' − ' + es.b + ' = ' + es.differenza; }
+      scritta: function (es) {
+        // Il collegamento con l'operazione inversa
+        return { operazione: es.a + ' − ' + es.b + ' = ' + es.differenza, dopo: ['Al contrario: ' + es.differenza + ' + ' + es.b + ' = ' + es.a] };
+      }
     });
   }
 })();
